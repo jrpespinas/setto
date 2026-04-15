@@ -8,7 +8,14 @@ export type Level =
 
 export type Gender = "male" | "female";
 
-export type PlayerStatus = "playing" | "done" | "break";
+/** Canonical player lifecycle.
+ *  - idle:    available, in sidebar, not committed to a court/queue
+ *  - waiting: placed on a queue card, awaiting court assignment
+ *  - playing: on an active court slot
+ *  - break:   off the floor, timers unmonitored
+ *  - done:    finished for the session, payment tracked
+ */
+export type PlayerStatus = "idle" | "waiting" | "playing" | "break" | "done";
 
 export type CourtSize = 2 | 4;
 
@@ -20,7 +27,8 @@ export type Player = {
   status: PlayerStatus;
   paid: boolean;
   arrivedAt: number;
-  waitingSince: number;
+  /** Timestamp the current status began — drives all section timers. */
+  statusSince: number;
   gamesPlayed: number;
   wins: number;
   losses: number;
@@ -33,8 +41,15 @@ export type Court = {
   slots: (string | null)[];
 };
 
+export type QueueCard = {
+  id: string;
+  size: CourtSize;
+  slots: (string | null)[];
+};
+
 export type Session = {
   courts: Court[];
+  queue: QueueCard[];
   players: Player[];
 };
 
@@ -63,6 +78,16 @@ export const LEVEL_FULL_LABEL: Record<Level, string> = {
   "upper-intermediate": "Upper-Intermediate",
   "advanced": "Advanced",
   "professional": "Professional",
+};
+
+/** Numeric skill ranking — used for "Best Player" tie-breakers. */
+export const LEVEL_RANK: Record<Level, number> = {
+  "beginner": 1,
+  "low-intermediate": 2,
+  "intermediate": 3,
+  "upper-intermediate": 4,
+  "advanced": 5,
+  "professional": 6,
 };
 
 export const GENDER_LABEL: Record<Gender, string> = {

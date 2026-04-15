@@ -1,5 +1,5 @@
-import { Dashboard } from "./_components/dashboard";
+import { Shell } from "@/components/shell/shell";
 
 export default function Home() {
-  return <Dashboard />;
+  return <Shell />;
 }

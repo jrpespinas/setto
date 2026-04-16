@@ -335,6 +335,14 @@ body::after {
 .lvl-advanced          { background: rgba(60,  100, 220, 0.45); color: #90b8ff; } /* Diamond  */
 .lvl-professional      { background: rgba(140, 50,  200, 0.48); color: #d090ff; } /* Legend   */
 
+/* Inside the court surface, chips need solid backgrounds — the green bleeds through transparency */
+.court-surface .lvl-beginner          { background: rgb(160, 88,  34);  color: #ffd4a0; }
+.court-surface .lvl-low-intermediate  { background: rgb(90,  100, 118); color: #e0e8f4; }
+.court-surface .lvl-intermediate      { background: rgb(158, 122, 16);  color: #fff0a0; }
+.court-surface .lvl-upper-intermediate{ background: rgb(24,  138, 174); color: #c0f0ff; }
+.court-surface .lvl-advanced          { background: rgb(48,  82,  200); color: #c0d4ff; }
+.court-surface .lvl-professional      { background: rgb(118, 38,  178); color: #f0c0ff; }
+
 /* Gender chips */
 .g-male   { color: var(--male); border-color: color-mix(in srgb, var(--male) 40%, transparent); }
 .g-female { color: var(--female); border-color: color-mix(in srgb, var(--female) 40%, transparent); }

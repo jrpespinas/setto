@@ -240,10 +240,13 @@ function Slot({
           e.dataTransfer.setData("text/player-id", player.id);
           e.dataTransfer.effectAllowed = "move";
         }}
-        className="h-full border-[0.5px] border-white/30 bg-white/[0.06] flex items-center justify-between px-2.5 cursor-grab active:cursor-grabbing active:opacity-60 transition-opacity"
+        className="h-full border-[0.5px] border-black/10 bg-[#f0f2f5] flex items-center justify-between px-2.5 cursor-grab active:cursor-grabbing active:opacity-70 transition-opacity"
       >
         <div className="min-w-0 flex-1 flex items-center gap-1.5">
-          <span className="font-display font-semibold text-[13px] leading-tight text-white truncate">
+          <span className={`shrink-0 font-bold text-[11px] leading-none ${player.gender === "male" ? "g-male" : "g-female"}`} aria-hidden>
+            {player.gender === "male" ? "♂" : "♀"}
+          </span>
+          <span className="font-display font-semibold text-[13px] leading-tight text-[#0e1018] truncate">
             {player.name}
           </span>
           <Chip
@@ -256,7 +259,7 @@ function Slot({
         <button
           onClick={onRelease}
           aria-label={`Remove ${player.name}`}
-          className="shrink-0 font-mono text-[11px] text-white/60 hover:text-white cursor-pointer px-1.5"
+          className="shrink-0 font-mono text-[11px] text-[#0e1018]/40 hover:text-[#0e1018] cursor-pointer px-1.5"
         >
           ×
         </button>

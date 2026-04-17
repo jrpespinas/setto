@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Figtree } from "next/font/google";
 import "./globals.css";
+import { RegisterSW } from "./register-sw";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -66,6 +67,7 @@ export default function RootLayout({
     >
       <head />
       <body className="min-h-full flex flex-col bg-ink-000 text-bone">
+        <RegisterSW />
         {children}
       </body>
     </html>

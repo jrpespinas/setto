@@ -16,7 +16,7 @@ A fixed 260px vertical rail positioned to the right of the courts grid. Contains
   - If the target slot is occupied, the existing player is displaced to Idle.
 - Individual players can be dragged out of a queue slot back to Idle by releasing on the sidebar or via `releaseQueueSlot`.
 - When a player enters any queue slot, their status becomes **`waiting`** and their `statusSince` timer resets.
-- Players in Break or Done **cannot** be dragged into the queue — only Idle players are draggable.
+- **All players (Idle, Break, Done) are draggable into queue slots** — there is no restriction based on current status.
 
 ## Player Cell Layout (Queue Slot)
 - Background: bone card (`bg-[#f0f2f5]`) — same as court player slots, high contrast against the queue card surface.
@@ -51,7 +51,7 @@ Same ranking tier chips as the sidebar player cards:
 ## Edge Cases
 - Dragging an incomplete queue card (1–3 players) to a court is allowed — the court fills what slots are occupied and leaves others empty.
 - A player cannot be in two queue cards or on a court simultaneously; the store enforces exclusivity via `releaseFromQueue` / `releaseFromCourts` before assigning.
-- Break and Done players are non-draggable; their `onDragStart` calls `e.preventDefault()`.
+- Any player regardless of status (idle, break, done) can be dragged into a queue slot.
 
 ## Acceptance Criteria
 - Dragging a full queue card (4 players) to a court moves all players and sets their status to `playing`.
@@ -63,6 +63,6 @@ Same ranking tier chips as the sidebar player cards:
 ## Constraints
 - Fixed at **3 queue cards** — no add/remove.
 - Queue cards currently support **doubles only** (4-slot format).
-- Break/Done players are non-draggable (drag prevented via `e.preventDefault()` in `onDragStart`).
 - No per-slot timer intervals — timers are driven by the single `setInterval` in the parent section.
 - Layout: rail is hidden below `xl` breakpoint (`hidden xl:block`).
+- The rail header reads **"Match Queue"**.

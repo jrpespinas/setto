@@ -21,12 +21,29 @@ The main content area displaying all active badminton courts. Courts can be adde
   - Court slots are cleared after the match is resolved.
 - **Clear Session**: "Clear Session" button in the masthead resets the entire session to the default 3 doubles courts with no players (`resetAll()`). Uses a 2-click confirmation pattern with a 3 s auto-reset.
 
+## Match Timer
+- Each court tracks a `matchStartedAt?: number` timestamp in the store.
+- `matchStartedAt` is set to `Date.now()` when a court transitions from vacant → ongoing (both sides have at least one player).
+- When the court is already ongoing and a player swap occurs (e.g., displacing one player and placing another), `matchStartedAt` is preserved — the clock is not restarted.
+- `matchStartedAt` is cleared (`undefined`) when the court goes vacant or a match is finished.
+- While ongoing, the court card header displays a live **MM:SS** match timer in `font-mono digit tabular-nums` style:
+  - **Neutral** (`text-bone-3`): < 12 minutes.
+  - **Amber** (`text-warm`): ≥ 12 minutes.
+  - **Red** (`text-alert`): ≥ 15 minutes.
+- The timer replaces the "Singles / Doubles" label in the header when a match is active.
+
+## Matches Completed Counter
+- `session.matchesCompleted: number` tracks how many matches have been resolved with a declared winner.
+- Incremented by `finishMatch` only when `winner === "A"` or `winner === "B"`. Draw / No result does not increment.
+- Displayed in the metric bar under The Floor → **Completed**.
+- Initialized to `0` in `seed()`.
+
 ## Court Visual Design
 - **Surface**: BWF-accurate green (`#1a7a40`) with a subtle top highlight gradient.
 - **Boundary lines**: 2px white lines on the left and right edges of the court surface via CSS `background-image` gradient strips (`rgba(255,255,255,0.88)`).
 - **Net / centre divider**: 2px `border-x` white (`border-white/70`), visually splitting Team A from Team B.
 - **Court label**: "Court N" displayed in the card header, left-aligned.
-- **Active state**: when both sides have at least one player, the court is considered "Ongoing" — the card may show a subtle active indicator.
+- **Active state**: when both sides have at least one player, the court is considered "Ongoing" — the match timer replaces the format label in the header.
 
 ## Player Slot Layout
 - **Background**: bone card (`bg-[#f0f2f5]`), `border-[0.5px] border-black/10` — high contrast against the green surface.

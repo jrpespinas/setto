@@ -1,2 +1,2 @@
-# setto
-Queueing app for racket sports 
+# Setto
+A Next.js app for setting badminton matches.

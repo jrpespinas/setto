@@ -1,0 +1,401 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   SETTO — Industrial Sport
+   High-contrast minimal system. One neon accent. Hairline rules.
+   ========================================================================== */
+
+:root {
+  /* Surfaces — cold graphite scaffold */
+  --ink-000: #070708;          /* deepest black, page */
+  --ink-050: #0d0d10;          /* panel recess */
+  --ink-100: #131317;          /* primary panel */
+  --ink-150: #191920;          /* elevated surface */
+  --ink-200: #22222a;          /* raised row */
+  --ink-300: #2d2d37;          /* divider strong */
+
+  /* Hairlines — glass-thin at 0.5px */
+  --hairline: rgba(255, 255, 255, 0.06);
+  --hairline-2: rgba(255, 255, 255, 0.10);
+  --hairline-3: rgba(255, 255, 255, 0.18);
+  --hairline-strong: rgba(255, 255, 255, 0.35);
+
+  /* Bone — readable text on black */
+  --bone: #f4f4f0;
+  --bone-2: rgba(244, 244, 240, 0.72);
+  --bone-3: rgba(244, 244, 240, 0.46);
+  --bone-4: rgba(244, 244, 240, 0.28);
+
+  /* Neon — the single accent: vivid teal */
+  --neon: #00dfc0;
+  --neon-deep: #00c4a8;
+  --neon-soft: rgba(0, 223, 192, 0.12);
+  --neon-ghost: rgba(0, 223, 192, 0.06);
+
+  /* Signals */
+  --alert: #ff5a4d;            /* destructive / unpaid */
+  --alert-soft: rgba(255, 90, 77, 0.14);
+  --cold: #7ab0ff;             /* break / cool */
+  --cold-soft: rgba(122, 176, 255, 0.14);
+  --moss: #7dd97d;             /* paid / done-positive */
+  --moss-soft: rgba(125, 217, 125, 0.14);
+  --warm: #f0a030;             /* bottleneck / caution */
+  --warm-soft: rgba(240, 160, 48, 0.14);
+
+  /* Level ramp — ranking tiers: Bronze → Silver → Gold → Platinum → Diamond → Legend */
+  --lvl-1: #b46428;   /* bronze   */
+  --lvl-2: #828891;   /* silver   */
+  --lvl-3: #b48c14;   /* gold     */
+  --lvl-4: #3ca0c8;   /* platinum */
+  --lvl-5: #3c64dc;   /* diamond  */
+  --lvl-6: #8c32c8;   /* legend   */
+
+  /* Gender inks */
+  --male: #8fb3e0;
+  --female: #e09fb9;
+}
+
+@theme inline {
+  --color-ink-000: var(--ink-000);
+  --color-ink-050: var(--ink-050);
+  --color-ink-100: var(--ink-100);
+  --color-ink-150: var(--ink-150);
+  --color-ink-200: var(--ink-200);
+  --color-ink-300: var(--ink-300);
+
+  --color-bone: var(--bone);
+  --color-bone-2: var(--bone-2);
+  --color-bone-3: var(--bone-3);
+  --color-bone-4: var(--bone-4);
+
+  --color-hairline: var(--hairline);
+  --color-hairline-2: var(--hairline-2);
+  --color-hairline-3: var(--hairline-3);
+
+  --color-neon: var(--neon);
+  --color-neon-deep: var(--neon-deep);
+  --color-neon-soft: var(--neon-soft);
+
+  --color-alert: var(--alert);
+  --color-alert-soft: var(--alert-soft);
+  --color-cold: var(--cold);
+  --color-cold-soft: var(--cold-soft);
+  --color-moss: var(--moss);
+  --color-moss-soft: var(--moss-soft);
+  --color-warm: var(--warm);
+  --color-warm-soft: var(--warm-soft);
+
+  --font-display: var(--font-figtree);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+/* ==========================================================================
+   LIGHT MODE — "Optical White" — cool near-white ground, charcoal type.
+   Blue-tinted surfaces read as clean white without the papery warmth.
+   ========================================================================== */
+
+html[data-theme="light"] {
+  /* Surfaces — cool blue undertone, clearly stepped */
+  --ink-000: #f5f7fa;   /* page ground — cool optical white */
+  --ink-050: #eceef3;   /* recessed panel (sidebar, queue) */
+  --ink-100: #e2e4eb;   /* primary panel surface */
+  --ink-150: #d4d7df;   /* elevated row */
+  --ink-200: #c2c5cf;   /* raised element */
+  --ink-300: #a8abb6;   /* strong divider bg */
+
+  /* Hairlines — cool-tinted dark base for crisp edges on white */
+  --hairline:        rgba(14, 16, 24, 0.08);
+  --hairline-2:      rgba(14, 16, 24, 0.16);
+  --hairline-3:      rgba(14, 16, 24, 0.30);
+  --hairline-strong: rgba(14, 16, 24, 0.55);
+
+  /* Text — near-black with blue cast, reads sharp on cool white */
+  --bone:   #0e1018;
+  --bone-2: rgba(14, 16, 24, 0.75);
+  --bone-3: rgba(14, 16, 24, 0.52);
+  --bone-4: rgba(14, 16, 24, 0.36);
+
+  /* Neon → deep teal — legible on cool white, same family as dark neon */
+  --neon: #007a6a;
+  --neon-deep: #005c50;
+  --neon-soft: rgba(0, 122, 106, 0.10);
+  --neon-ghost: rgba(0, 122, 106, 0.05);
+
+  /* Signals — slightly more saturated to pop on light */
+  --alert: #d93020;
+  --alert-soft: rgba(217, 48, 32, 0.10);
+  --cold: #2a62c0;
+  --cold-soft: rgba(42, 98, 192, 0.10);
+  --moss: #1a7a36;
+  --moss-soft: rgba(26, 122, 54, 0.10);
+  --warm: #b86800;
+  --warm-soft: rgba(184, 104, 0, 0.10);
+
+  /* Level ramp — ranking tiers, darkened for legibility on light panels */
+  --lvl-1: #7a3c10;   /* bronze   */
+  --lvl-2: #384858;   /* silver   */
+  --lvl-3: #6a5008;   /* gold     */
+  --lvl-4: #205878;   /* platinum */
+  --lvl-5: #203890;   /* diamond  */
+  --lvl-6: #501888;   /* legend   */
+
+  /* Gender chips */
+  --male: #1a4a8a;
+  --female: #8a2a50;
+}
+
+/* Grain overlay — less intense in light mode */
+html[data-theme="light"] body::before {
+  opacity: 0.18;
+}
+
+/* Vignette — none in light mode */
+html[data-theme="light"] body::after {
+  opacity: 0;
+}
+
+/* Ranking tier chips — light mode overrides (lighter bg, dark saturated text) */
+html[data-theme="light"] .lvl-beginner          { background: rgba(180, 100, 40,  0.16); color: #7a3c10; } /* Bronze   */
+html[data-theme="light"] .lvl-low-intermediate  { background: rgba(130, 140, 160, 0.20); color: #384858; } /* Silver   */
+html[data-theme="light"] .lvl-intermediate      { background: rgba(180, 140, 20,  0.20); color: #6a5008; } /* Gold     */
+html[data-theme="light"] .lvl-upper-intermediate{ background: rgba(40,  160, 200, 0.20); color: #205878; } /* Platinum */
+html[data-theme="light"] .lvl-advanced          { background: rgba(60,  100, 220, 0.18); color: #203890; } /* Diamond  */
+html[data-theme="light"] .lvl-professional      { background: rgba(140, 50,  200, 0.18); color: #501888; } /* Legend   */
+
+html[data-theme="light"] .g-male   { color: var(--male); }
+html[data-theme="light"] .g-female { color: var(--female); }
+
+/* Court surface — unchanged, feels right in both modes */
+
+html,
+body {
+  background: var(--ink-000);
+  color: var(--bone);
+  font-feature-settings: "ss01", "cv11";
+}
+
+body {
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Film grain — fine, cinematic, non-intrusive */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.18 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 220px 220px;
+}
+
+/* Vignette — barely-there */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+  background: radial-gradient(
+    120% 80% at 50% 0%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.45) 100%
+  );
+}
+
+::selection {
+  background: var(--neon);
+  color: var(--ink-000);
+}
+
+/* ==========================================================================
+   Utility classes (kept light — most live in Tailwind)
+   ========================================================================== */
+
+/* Tabular numerics — all metrics should feel machined */
+.digit {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "ss01", "tnum";
+  letter-spacing: -0.01em;
+}
+
+/* 0.5px hairline border — requires a 1px wrapper at 0.5 opacity trick */
+.hairline {
+  position: relative;
+}
+.hairline::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 0.5px solid var(--hairline-2);
+}
+
+/* Used for the card body recess */
+.recess {
+  background: linear-gradient(
+    180deg,
+    var(--ink-100) 0%,
+    var(--ink-050) 100%
+  );
+}
+
+/* Half-pixel hairlines via box-shadow (works on non-DPR-2 screens as 1px) */
+.rule-top    { box-shadow: inset 0 0.5px 0 0 var(--hairline-2); }
+.rule-bottom { box-shadow: inset 0 -0.5px 0 0 var(--hairline-2); }
+.rule-x      { box-shadow: inset 0 0.5px 0 0 var(--hairline-2), inset 0 -0.5px 0 0 var(--hairline-2); }
+.rule-left   { box-shadow: inset 0.5px 0 0 0 var(--hairline-2); }
+.rule-right  { box-shadow: inset -0.5px 0 0 0 var(--hairline-2); }
+
+/* Diagonal hatch — for "done / archived" regions */
+.hatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.03) 0 1px,
+    transparent 1px 8px
+  );
+}
+
+/* Neon glow for "ready" pulses on queue cards */
+.neon-glow {
+  box-shadow:
+    0 0 0 0.5px var(--neon),
+    0 0 16px -2px rgba(0, 223, 192, 0.45);
+}
+
+/* Reveal — staggered card entrance */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.reveal {
+  animation: reveal 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Sidebar slide — 200ms exact */
+@keyframes slide-in-right {
+  from { transform: translateX(8px); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 1; }
+}
+.slide-in {
+  animation: slide-in-right 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Live pulse — understated */
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.85); }
+}
+.pulse-live { animation: pulse-live 1.6s ease-in-out infinite; }
+
+/* Soft color pulse for unpaid — editorial alert, not flashing */
+@keyframes pulse-alert {
+  0%, 100% { box-shadow: inset 2px 0 0 var(--alert), 0 0 0 0 rgba(255, 90, 77, 0); }
+  50%      { box-shadow: inset 2px 0 0 var(--alert), 0 0 12px -2px rgba(255, 90, 77, 0.45); }
+}
+.pulse-alert { animation: pulse-alert 2.4s ease-in-out infinite; }
+
+/* Drop-target highlight */
+[data-drop="over"] {
+  outline: 1px solid var(--neon);
+  outline-offset: -1px;
+  background: var(--neon-soft);
+}
+
+/* Scrollbars — hairline */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--hairline-3) transparent;
+}
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--hairline-3);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Ranking tier chips — saturated bg + bright text for gym-light legibility */
+.lvl-beginner          { background: rgba(180, 100, 40,  0.62); color: #ffe0b8; } /* Bronze   */
+.lvl-low-intermediate  { background: rgba(130, 140, 160, 0.58); color: #f0f4fc; } /* Silver   */
+.lvl-intermediate      { background: rgba(180, 140, 20,  0.65); color: #ffea88; } /* Gold     */
+.lvl-upper-intermediate{ background: rgba(40,  160, 200, 0.62); color: #c4eeff; } /* Platinum */
+.lvl-advanced          { background: rgba(60,  100, 220, 0.68); color: #d0dcff; } /* Diamond  */
+.lvl-professional      { background: rgba(140, 50,  200, 0.68); color: #ecc0ff; } /* Legend   */
+
+/* Inside the court surface, chips need solid backgrounds — the green bleeds through transparency */
+.court-surface .lvl-beginner          { background: rgb(160, 88,  34);  color: #ffd4a0; }
+.court-surface .lvl-low-intermediate  { background: rgb(90,  100, 118); color: #e0e8f4; }
+.court-surface .lvl-intermediate      { background: rgb(158, 122, 16);  color: #fff0a0; }
+.court-surface .lvl-upper-intermediate{ background: rgb(24,  138, 174); color: #c0f0ff; }
+.court-surface .lvl-advanced          { background: rgb(48,  82,  200); color: #c0d4ff; }
+.court-surface .lvl-professional      { background: rgb(118, 38,  178); color: #f0c0ff; }
+
+/* Gender chips */
+.g-male   { color: var(--male); border-color: color-mix(in srgb, var(--male) 40%, transparent); }
+.g-female { color: var(--female); border-color: color-mix(in srgb, var(--female) 40%, transparent); }
+
+/* Court surface — BWF-accurate green with 2px white boundary lines.
+   Side lines sit 6px from the edge; center net handled by the vs-column border. */
+.court-surface {
+  background-color: #1a7a40;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,0.07) 0, transparent 55%),
+    linear-gradient(90deg,
+      transparent 0 6px,
+      rgba(255,255,255,0.88) 6px 8px,
+      transparent 8px calc(100% - 8px),
+      rgba(255,255,255,0.88) calc(100% - 8px) calc(100% - 6px),
+      transparent calc(100% - 6px)
+    );
+}
+
+/* Big number treatment — the display-font metric */
+.big-number {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  font-feature-settings: "ss01", "tnum";
+}
+
+/* Editorial label — kerned mono uppercase */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--bone-3);
+}
+
+/* Chunky display — extreme tight tracking, statement */
+.statement {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.86;
+}
+
+/* Prevent body scroll when drag active */
+body.dragging {
+  cursor: grabbing !important;
+}

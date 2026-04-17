@@ -19,14 +19,12 @@ export function BreakSection({
 }) {
   return (
     <SectionShell
-      eyebrow="02 · Resting"
-      title="Break"
+      title="Resting"
       count={players.length}
       accent="break"
       collapsed={collapsed}
       onToggleCollapse={onToggleCollapse}
       dropTarget="break"
-      className="max-h-[28vh]"
       emptyState={
         <div className="max-w-[200px] mx-auto py-4 border-[0.5px] border-dashed border-cold/40 px-3">
           <div className="font-display italic text-cold text-sm leading-snug">

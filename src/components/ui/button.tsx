@@ -19,7 +19,7 @@ const variants: Record<Variant, string> = {
   ghost:
     "text-bone-2 hover:text-bone hover:bg-white/[0.03]",
   solid:
-    "bg-bone text-ink-000 hover:bg-white",
+    "bg-bone text-ink-000 hover:bg-white hover:text-bone",
   neon:
     "bg-neon text-ink-000 hover:bg-neon-deep shadow-[0_0_0_0.5px_var(--neon)]",
   danger:

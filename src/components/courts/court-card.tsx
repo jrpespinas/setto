@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { useStore } from "@/lib/store";
 import {
   LEVEL_LABEL,
@@ -33,6 +33,13 @@ export function CourtCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [finish, setFinish] = useState(false);
   const [queueOver, setQueueOver] = useState(false);
+  const [tick, setTick] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!court.matchStartedAt) return;
+    const id = window.setInterval(() => setTick(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [court.matchStartedAt]);
 
   const half = court.size / 2;
   const teamA = court.slots.slice(0, half);
@@ -93,9 +100,13 @@ export function CourtCard({
             ) : (
               <Chip tone="muted">Vacant</Chip>
             )}
-            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone-4">
-              {court.size === 2 ? "Singles" : "Doubles"}
-            </span>
+            {ongoing && court.matchStartedAt ? (
+              <MatchTimer startedAt={court.matchStartedAt} tick={tick} />
+            ) : (
+              <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone-4">
+                {court.size === 2 ? "Singles" : "Doubles"}
+              </span>
+            )}
           </div>
         </header>
 
@@ -283,5 +294,26 @@ function Slot({
         Drop player
       </span>
     </div>
+  );
+}
+
+function MatchTimer({ startedAt, tick }: { startedAt: number; tick: number }) {
+  const elapsedMs = tick - startedAt;
+  const AMBER_MS = 12 * 60 * 1000;
+  const RED_MS   = 15 * 60 * 1000;
+
+  const totalSec = Math.floor(elapsedMs / 1000);
+  const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
+  const ss = String(totalSec % 60).padStart(2, "0");
+
+  const color =
+    elapsedMs >= RED_MS   ? "text-alert" :
+    elapsedMs >= AMBER_MS ? "text-warm"  :
+    "text-bone-3";
+
+  return (
+    <span className={`font-mono digit text-[13px] tracking-[0.08em] tabular-nums transition-colors ${color}`}>
+      {mm}:{ss}
+    </span>
   );
 }

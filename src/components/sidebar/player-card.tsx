@@ -41,7 +41,6 @@ export function PlayerCard({
   const alertPulse = variant === "done" && !player.paid ? "pulse-alert" : "";
 
   const handleDragStart = (e: DragEvent<HTMLLIElement>) => {
-    if (variant !== "idle") { e.preventDefault(); return; }
     e.dataTransfer.setData("text/player-id", player.id);
     e.dataTransfer.effectAllowed = "move";
     document.body.classList.add("dragging");
@@ -53,14 +52,11 @@ export function PlayerCard({
 
   return (
     <li
-      draggable={variant === "idle"}
+      draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onMouseLeave={() => setConfirmDelete(false)}
-      className={`
-        group relative pl-3 pr-3 py-2.5 rule-bottom overflow-hidden
-        ${variant === "idle" ? "cursor-grab active:cursor-grabbing" : ""}
-      `}
+      className="group relative pl-3 pr-3 py-2.5 rule-bottom overflow-hidden cursor-grab active:cursor-grabbing"
     >
       {/* Status rail — 2px strip on left */}
       <span
@@ -126,22 +122,39 @@ export function PlayerCard({
 
         {variant === "idle" && (
           <>
-            <ActionBtn onClick={() => setStatus(player.id, "break")}>Break</ActionBtn>
-            <ActionBtn onClick={() => setStatus(player.id, "done")}>Done</ActionBtn>
+            <ActionBtn onClick={() => setStatus(player.id, "break")}>Rest</ActionBtn>
+            <ActionBtn onClick={() => setStatus(player.id, "done")}>Finish</ActionBtn>
           </>
         )}
         {variant === "break" && (
-          <ActionBtn onClick={() => setStatus(player.id, "idle")}>Resume</ActionBtn>
+          <>
+            <ActionBtn onClick={() => setStatus(player.id, "idle")}>Return</ActionBtn>
+            <ActionBtn onClick={() => setStatus(player.id, "done")}>Finish</ActionBtn>
+          </>
         )}
         {variant === "done" && (
           <>
-            <ActionBtn
-              onClick={() => togglePaid(player.id)}
-              className={player.paid ? "text-moss" : "text-alert"}
-            >
-              {player.paid ? "Paid" : "Unpaid"}
-            </ActionBtn>
-            <ActionBtn onClick={() => setStatus(player.id, "idle")}>Reopen</ActionBtn>
+            {player.paid ? (
+              <span className="flex items-center gap-1.5">
+                <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-moss border-[0.5px] border-moss/50 px-1.5 py-0.5">
+                  ✓ Paid
+                </span>
+                <button
+                  onClick={() => togglePaid(player.id)}
+                  className="font-mono text-[8px] uppercase tracking-[0.18em] text-bone-4 hover:text-alert cursor-pointer transition-colors"
+                >
+                  Undo
+                </button>
+              </span>
+            ) : (
+              <ActionBtn
+                onClick={() => togglePaid(player.id)}
+                className="text-alert hover:text-moss hover:border-moss/50"
+              >
+                Mark Paid
+              </ActionBtn>
+            )}
+            <ActionBtn onClick={() => setStatus(player.id, "idle")}>Return</ActionBtn>
           </>
         )}
 
@@ -155,8 +168,8 @@ export function PlayerCard({
             }
           }}
           className={`
-            font-mono text-[9px] uppercase tracking-[0.22em] px-1.5 py-0.5 cursor-pointer transition-colors
-            ${confirmDelete ? "text-alert font-bold" : "text-bone-4 hover:text-alert"}
+            font-mono text-[9px] uppercase tracking-[0.22em] px-1.5 py-0.5 cursor-pointer transition-colors border-[0.5px]
+            ${confirmDelete ? "text-alert font-bold border-alert/50" : "text-bone-4 hover:text-alert border-transparent hover:border-alert/50"}
           `}
         >
           {confirmDelete ? "Confirm?" : "Remove"}
@@ -178,7 +191,7 @@ function ActionBtn({
   return (
     <button
       onClick={onClick}
-      className={`font-mono text-[9px] uppercase tracking-[0.22em] text-bone-3 hover:text-neon px-1.5 py-0.5 cursor-pointer transition-colors ${className}`}
+      className={`font-mono text-[9px] uppercase tracking-[0.22em] text-bone-3 hover:text-neon px-1.5 py-0.5 cursor-pointer transition-colors border-[0.5px] border-transparent hover:border-neon/50 ${className}`}
     >
       {children}
     </button>

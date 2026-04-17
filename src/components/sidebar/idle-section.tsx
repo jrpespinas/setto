@@ -19,18 +19,16 @@ export function IdleSection({
 }) {
   return (
     <SectionShell
-      eyebrow="01 · Ready"
-      title="Idle"
+      title="Waiting"
       count={players.length}
       accent="idle"
       collapsed={collapsed}
       onToggleCollapse={onToggleCollapse}
       dropTarget="idle"
-      height="flex"
       emptyState={
         <EmptyState
-          message="No one is idle."
-          hint="Sign in a player, or drag a player here from Break or Done."
+          message="No one is waiting."
+          hint="Sign in a player, or drag a player here from Resting or Finished."
         />
       }
     >

@@ -16,8 +16,20 @@ import { ServiceWorkerRegister } from "./sw-register";
  *  Main: masthead + metrics + (queue | courts). */
 export function Shell() {
   const hydrated = useStore((s) => s.hydrated);
+  const resetAll = useStore((s) => s.resetAll);
   const [addCourt, setAddCourt] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [sessionStamp, setSessionStamp] = useState("");
+
+  const handleReset = () => {
+    if (confirmReset) {
+      resetAll();
+      setConfirmReset(false);
+    } else {
+      setConfirmReset(true);
+      window.setTimeout(() => setConfirmReset(false), 3000);
+    }
+  };
 
   useEffect(() => {
     const update = () =>
@@ -66,6 +78,9 @@ export function Shell() {
                 <span className="font-mono text-[9px] uppercase tracking-[0.28em] text-bone-4">
                   {hydrated ? "· live" : "· syncing"}
                 </span>
+                <Button variant="danger" size="sm" onClick={handleReset}>
+                  {confirmReset ? "Confirm?" : "Clear Session"}
+                </Button>
                 <Button variant="solid" size="sm" onClick={() => setAddCourt(true)}>
                   + Court
                 </Button>

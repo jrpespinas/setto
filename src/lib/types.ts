@@ -39,6 +39,7 @@ export type Court = {
   number: number;
   size: CourtSize;
   slots: (string | null)[];
+  matchStartedAt?: number;
 };
 
 export type QueueCard = {
@@ -51,6 +52,7 @@ export type Session = {
   courts: Court[];
   queue: QueueCard[];
   players: Player[];
+  matchesCompleted: number;
 };
 
 export const LEVELS: Level[] = [

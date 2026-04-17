@@ -33,7 +33,7 @@ function seed(): Session {
     courts: [
       { id: uid(), number: 1, size: 4, slots: [null, null, null, null] },
       { id: uid(), number: 2, size: 4, slots: [null, null, null, null] },
-      { id: uid(), number: 3, size: 2, slots: [null, null] },
+      { id: uid(), number: 3, size: 4, slots: [null, null, null, null] },
     ],
     queue: Array.from({ length: QUEUE_SLOTS }, () => ({
       id: uid(),
@@ -41,6 +41,7 @@ function seed(): Session {
       slots: [null, null, null, null],
     })),
     players: [],
+    matchesCompleted: 0,
   };
 }
 
@@ -56,6 +57,13 @@ function releaseFromQueue(queue: QueueCard[], playerId: string): QueueCard[] {
     ...q,
     slots: q.slots.map((s) => (s === playerId ? null : s)),
   }));
+}
+
+function courtIsOngoing(court: Court, playerIds: Set<string>): boolean {
+  const half = court.size / 2;
+  const a = court.slots.slice(0, half).some((id) => id && playerIds.has(id));
+  const b = court.slots.slice(half).some((id) => id && playerIds.has(id));
+  return a && b;
 }
 
 function occupiedOnCourts(courts: Court[]): Set<string> {
@@ -232,14 +240,23 @@ export const useStore = create<SettoStore>()(
           );
           const displacedId = prevCourt?.slots[slotIndex] ?? null;
 
-          const courts = releaseFromCourts(session.courts, playerId).map((c) =>
-            c.id === courtId
-              ? {
-                  ...c,
-                  slots: c.slots.map((s, i) => (i === slotIndex ? playerId : s)),
-                }
-              : c,
-          );
+          const allPlayerIds = new Set(session.players.map((p) => p.id));
+          const prevCourts = releaseFromCourts(session.courts, playerId);
+          const prevTarget = prevCourts.find((c) => c.id === courtId)!;
+          const wasOngoing = courtIsOngoing(prevTarget, allPlayerIds);
+
+          const courts = prevCourts.map((c) => {
+            if (c.id !== courtId) return c;
+            const nextSlots = c.slots.map((s, i) => (i === slotIndex ? playerId : s));
+            const nextCourt = { ...c, slots: nextSlots };
+            const nowOngoing = courtIsOngoing(nextCourt, allPlayerIds);
+            return {
+              ...nextCourt,
+              matchStartedAt: nowOngoing
+                ? wasOngoing ? c.matchStartedAt : now()
+                : undefined,
+            };
+          });
           const queue = releaseFromQueue(session.queue, playerId);
 
           const players = session.players.map((p) => {
@@ -259,17 +276,21 @@ export const useStore = create<SettoStore>()(
         set(({ session }) => {
           const court = session.courts.find((c) => c.id === courtId);
           const released = court?.slots[slotIndex] ?? null;
+          const allPlayerIds = new Set(session.players.map((p) => p.id));
           return {
             session: {
               ...session,
-              courts: session.courts.map((c) =>
-                c.id === courtId
-                  ? {
-                      ...c,
-                      slots: c.slots.map((s, i) => (i === slotIndex ? null : s)),
-                    }
-                  : c,
-              ),
+              courts: session.courts.map((c) => {
+                if (c.id !== courtId) return c;
+                const nextSlots = c.slots.map((s, i) => (i === slotIndex ? null : s));
+                const nextCourt = { ...c, slots: nextSlots };
+                return {
+                  ...nextCourt,
+                  matchStartedAt: courtIsOngoing(nextCourt, allPlayerIds)
+                    ? c.matchStartedAt
+                    : undefined,
+                };
+              }),
               players: session.players.map((p) =>
                 p.id === released
                   ? { ...p, status: "idle" as PlayerStatus, statusSince: now() }
@@ -350,9 +371,16 @@ export const useStore = create<SettoStore>()(
             next[i] = q.slots[i] ?? null;
           }
 
-          const courts = session.courts.map((c) =>
-            c.id === courtId ? { ...c, slots: next } : c,
-          );
+          const allPlayerIds = new Set(session.players.map((p) => p.id));
+          const matchTs = now();
+          const courts = session.courts.map((c) => {
+            if (c.id !== courtId) return c;
+            const nextCourt = { ...c, slots: next };
+            return {
+              ...nextCourt,
+              matchStartedAt: courtIsOngoing(nextCourt, allPlayerIds) ? matchTs : undefined,
+            };
+          });
 
           const queue = session.queue.map((qq) =>
             qq.id === queueId
@@ -422,9 +450,14 @@ export const useStore = create<SettoStore>()(
           });
 
           const courts = session.courts.map((c) =>
-            c.id === courtId ? { ...c, slots: Array(c.size).fill(null) } : c,
+            c.id === courtId
+              ? { ...c, slots: Array(c.size).fill(null), matchStartedAt: undefined }
+              : c,
           );
-          return { session: { ...session, courts, players } };
+          const matchesCompleted = winner !== "none"
+            ? (session.matchesCompleted ?? 0) + 1
+            : (session.matchesCompleted ?? 0);
+          return { session: { ...session, courts, players, matchesCompleted } };
         });
       },
 
@@ -454,11 +487,13 @@ export const useStore = create<SettoStore>()(
               ...session,
               courts,
               queue,
-              players: session.players.map((p) =>
-                p.id === playerId
-                  ? { ...p, status, statusSince: now() }
-                  : p,
-              ),
+              players: session.players.map((p) => {
+                if (p.id !== playerId) return p;
+                // Preserve accumulated wait time when shuttling between idle ↔ break
+                const idleBreak = (p.status === "idle" || p.status === "break")
+                  && (status === "idle" || status === "break");
+                return { ...p, status, statusSince: idleBreak ? p.statusSince : now() };
+              }),
             },
           };
         });

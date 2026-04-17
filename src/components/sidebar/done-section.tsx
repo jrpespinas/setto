@@ -17,18 +17,14 @@ export function DoneSection({
   onToggleCollapse: () => void;
   onEdit: (p: Player) => void;
 }) {
-  const unpaid = players.filter((p) => !p.paid).length;
-
   return (
     <SectionShell
-      eyebrow={unpaid > 0 ? `03 · ${unpaid} Unpaid` : "03 · Settled"}
-      title="Done"
+      title="Finished"
       count={players.length}
       accent="done"
       collapsed={collapsed}
       onToggleCollapse={onToggleCollapse}
       dropTarget="done"
-      className="max-h-[32vh]"
       emptyState={
         <div className="max-w-[200px] mx-auto py-4 border-[0.5px] border-dashed border-hairline-3 px-3">
           <div className="font-display italic text-bone-3 text-sm leading-snug">

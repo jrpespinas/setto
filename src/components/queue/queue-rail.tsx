@@ -3,7 +3,7 @@
 import { useMemo, useState, type DragEvent } from "react";
 import { useStore, selectors } from "@/lib/store";
 import { LEVEL_LABEL, type Player, type QueueCard } from "@/lib/types";
-import { Chip, Eyebrow, LiveDot } from "@/components/ui/chip";
+import { Chip, LiveDot } from "@/components/ui/chip";
 
 /** 3-slot queue rail — "prototype matches" feeding the courts.
  * Ghost-bordered, ready-pulses when filled to a valid size. */
@@ -15,8 +15,7 @@ export function QueueRail() {
   return (
     <aside className="relative flex flex-col bg-ink-050 rule-left">
       <header className="shrink-0 px-4 pt-4 pb-3 rule-bottom">
-        <Eyebrow>Pending</Eyebrow>
-        <h2 className="statement text-[26px] mt-1 leading-none">Queue</h2>
+        <h2 className="statement text-[26px] leading-none">Match Queue</h2>
         <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone-4 mt-2">
           {queue.filter((q) => q.slots.some(Boolean)).length} / 3 matches ready
         </p>

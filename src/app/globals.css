@@ -39,6 +39,8 @@
   --cold-soft: rgba(122, 176, 255, 0.14);
   --moss: #7dd97d;             /* paid / done-positive */
   --moss-soft: rgba(125, 217, 125, 0.14);
+  --warm: #f0a030;             /* bottleneck / caution */
+  --warm-soft: rgba(240, 160, 48, 0.14);
 
   /* Level ramp — ranking tiers: Bronze → Silver → Gold → Platinum → Diamond → Legend */
   --lvl-1: #b46428;   /* bronze   */
@@ -80,6 +82,8 @@
   --color-cold-soft: var(--cold-soft);
   --color-moss: var(--moss);
   --color-moss-soft: var(--moss-soft);
+  --color-warm: var(--warm);
+  --color-warm-soft: var(--warm-soft);
 
   --font-display: var(--font-figtree);
   --font-sans: var(--font-geist-sans);
@@ -129,6 +133,8 @@ html[data-theme="light"] {
   --cold-soft: rgba(42, 98, 192, 0.10);
   --moss: #1a7a36;
   --moss-soft: rgba(26, 122, 54, 0.10);
+  --warm: #b86800;
+  --warm-soft: rgba(184, 104, 0, 0.10);
 
   /* Level ramp — ranking tiers, darkened for legibility on light panels */
   --lvl-1: #7a3c10;   /* bronze   */
@@ -327,13 +333,13 @@ body::after {
 }
 *::-webkit-scrollbar-track { background: transparent; }
 
-/* Ranking tier chips */
-.lvl-beginner          { background: rgba(180, 100, 40,  0.38); color: #eaaf60; } /* Bronze   */
-.lvl-low-intermediate  { background: rgba(130, 140, 160, 0.38); color: #ccd4e4; } /* Silver   */
-.lvl-intermediate      { background: rgba(180, 140, 20,  0.42); color: #f2cc40; } /* Gold     */
-.lvl-upper-intermediate{ background: rgba(40,  160, 200, 0.40); color: #88d8f4; } /* Platinum */
-.lvl-advanced          { background: rgba(60,  100, 220, 0.45); color: #90b8ff; } /* Diamond  */
-.lvl-professional      { background: rgba(140, 50,  200, 0.48); color: #d090ff; } /* Legend   */
+/* Ranking tier chips — saturated bg + bright text for gym-light legibility */
+.lvl-beginner          { background: rgba(180, 100, 40,  0.62); color: #ffe0b8; } /* Bronze   */
+.lvl-low-intermediate  { background: rgba(130, 140, 160, 0.58); color: #f0f4fc; } /* Silver   */
+.lvl-intermediate      { background: rgba(180, 140, 20,  0.65); color: #ffea88; } /* Gold     */
+.lvl-upper-intermediate{ background: rgba(40,  160, 200, 0.62); color: #c4eeff; } /* Platinum */
+.lvl-advanced          { background: rgba(60,  100, 220, 0.68); color: #d0dcff; } /* Diamond  */
+.lvl-professional      { background: rgba(140, 50,  200, 0.68); color: #ecc0ff; } /* Legend   */
 
 /* Inside the court surface, chips need solid backgrounds — the green bleeds through transparency */
 .court-surface .lvl-beginner          { background: rgb(160, 88,  34);  color: #ffd4a0; }

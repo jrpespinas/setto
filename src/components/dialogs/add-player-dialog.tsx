@@ -35,7 +35,7 @@ export function AddPlayerDialog({
         onClose();
       }}
       eyebrow="Roster / New"
-      title="Sign in player"
+      title="Add player"
     >
       <form
         onSubmit={(e) => {
@@ -120,7 +120,7 @@ export function AddPlayerDialog({
             Cancel
           </Button>
           <Button type="submit" variant="neon">
-            Sign in
+            Add
           </Button>
         </div>
       </form>

@@ -1,55 +1,68 @@
-# Spec: Queue
+# Spec: Queue Rail
 
 ## Summary
-A section where pending matches are queued
+A fixed 260px vertical rail positioned to the right of the courts grid. Contains exactly 3 queue cards stacked top-to-bottom, each representing a pending match lineup waiting to be assigned to a court.
 
 ## Functional Requirements
-- Contains 3 badminton-court like cards called Queue card arranged from top to bottom
-    - a queue card has two sides, indicating the teams playing
-    - a queue card can contain 2 or 4 players implying it's a doubles or singles game waiting
-- a queue card can be dragged
-    - dragging the queue card to the \<court\> means dragging all the players in the assigned court
-    - dragging the queue card to the \<player-sidebar\> means moving all the players to the idle section
-- when a player is moved in the queue section, or any queue card, his timer now monitors for the **waiting** status
-- a player can be dragged from one queue card to another
-- a player can be dragged from one section to another
-- a player can be dragged from one team to another team regardless if \<court\> or Queue
+- The queue rail is always visible at desktop widths (`xl:block`) and hidden on smaller screens.
+- There are exactly **3 queue cards** — fixed capacity, no adding or removing cards.
+- Each queue card has **4 slots** (doubles format) arranged as Team A (top 2) vs Team B (bottom 2).
+- A queue card can be dragged by its drag handle to a `<court>`:
+  - All players on the card are moved to the court (`promoteQueueToCourt`).
+  - Players already on the court are displaced to Idle.
+  - The queue card slots are cleared after promotion.
+- A queue card can be dragged to the `<player-sidebar>` idle section to bulk-return all its players to Idle (`dumpQueueToIdle`).
+- Individual players can be dragged from the sidebar or another slot into a specific queue slot (`assignToQueueSlot`).
+  - If the target slot is occupied, the existing player is displaced to Idle.
+- Individual players can be dragged out of a queue slot back to Idle by releasing on the sidebar or via `releaseQueueSlot`.
+- When a player enters any queue slot, their status becomes **`waiting`** and their `statusSince` timer resets.
+- Players in Break or Done **cannot** be dragged into the queue — only Idle players are draggable.
+
+## Player Cell Layout (Queue Slot)
+- Background: bone card (`bg-[#f0f2f5]`) — same as court player slots, high contrast against the queue card surface.
+- Left to right: `♂/♀` gender icon (color-coded, `g-male` / `g-female`) · player name (truncated) · level chip (ranking tier color, solid opaque on light surface).
+- Empty slot: dashed border placeholder, drop-target glow when a draggable is hovering.
+
+## Queue Card Layout
+- **Drag handle**: 6-dot icon (`⋮⋮`) at the top of the card — grab to drag the entire card to a court.
+- **Team A** (top 2 slots) and **Team B** (bottom 2 slots) separated by a thin divider labeled "vs".
+- Card border: `border-hairline-2` at rest; highlighted drop-target glow when a player is dragged over it.
+- **Ready indicator**: when all 4 slots are filled, the drag handle area shows a neon tint to signal the card is ready to promote.
+
+## Level Chip Colors
+Same ranking tier chips as the sidebar player cards:
+
+| Level | Token |
+|---|---|
+| Beginner | `.lvl-beginner` — amber bg, gold text |
+| Low-Intermediate | `.lvl-low-intermediate` — grey-blue bg, silver text |
+| Intermediate | `.lvl-intermediate` — deep amber bg, bright gold text |
+| Upper-Intermediate | `.lvl-upper-intermediate` — cyan-steel bg, sky text |
+| Advanced | `.lvl-advanced` — deep blue bg, bright blue text |
+| Professional | `.lvl-professional` — violet bg, purple text |
 
 ## UI/UX Considerations
-1. Visual Hierarchy & "Ghosting"
-    - "Ghost" Court Aesthetics: Since you mentioned no solid colors, use a dashed or low-opacity border for Queue cards. This visually signals they are "prototypes" of a match and not a live court.
-    - Capacity Indicators: Use "empty slot" silhouettes (e.g., a faint gray circle with a plus icon). This makes it obvious where a player can be dropped and whether a card is currently set for Singles or Doubles.
-    - Layout: Occupies 25% of the screen
-2. The "Displacement" Warning
-    - Target Highlighting: When dragging a player over an occupied slot, the occupied player card should shrink or shake slightly, and the slot should glow (e.g., a subtle amber border). This warns the user: "Dropping here will kick this person back to Idle."
-    - Undo Toast: If a player is displaced back to the sidebar, show a brief toast notification: "Player [Name] moved back to Idle. [Undo]".
-3. Drag-and-Drop Clarity
-    - Handle-based Dragging: In a compact list, dragging the entire card by mistake is annoying. Use a small six-dot drag handle icon for the Queue Card itself, but allow the entire Player Card to be the handle for individual player moves.
-    - Snap-to-Grid: Use a "snapping" animation. When a player or card is released near a valid drop zone, it should snap into place instantly rather than drifting.
-4. Interactive Timer Feedback
-    - Color-Coded Urgency: Since the status is "Waiting," the timer text should subtly change color as they wait longer (e.g., from Gray to Yellow to soft Orange) to help the admin prioritize which queue card to move to a court first.
-5. Layout Fluidity
-    - Auto-Collapse Empty Slots: If a Queue card is moved to a court, the remaining cards should slide up smoothly (CSS transitions) rather than "teleporting."
-6. "Ready to Play" State
-    - Pulse Animation: Once a Queue card hits exactly 2 or 4 players, give the "Move to Court" drag handle a subtle pulse effect or change its border color to green. This signals to the admin: "This match is valid and ready to go."
-
+1. **Ghost aesthetic**: Queue cards use a subdued surface (not as prominent as live courts) to signal they are pending, not active.
+2. **Drop-zone highlight**: When a player or queue card is dragged over a valid drop zone, the target is highlighted with a neon-soft background tint.
+3. **Displacement**: Dropping onto an occupied slot silently displaces the current occupant to Idle (no confirmation required — displacement is expected behavior).
+4. **Scrollable rail**: If the queue rail overflows vertically, it scrolls independently of the courts area.
+5. **Empty state**: Slots with no player show a dashed placeholder; queue cards with zero players show a contextual empty-state prompt.
 
 ## Edge Cases
-- Dragging Players: when a player is dragged to a different queue card, he or she, displaces that player. And the displaced player is returned to the idle section
-- Status changes: when a player is dragged, his status changes depending on the section he is placed
+- Dragging an incomplete queue card (1–3 players) to a court is allowed — the court fills what slots are occupied and leaves others empty.
+- A player cannot be in two queue cards or on a court simultaneously; the store enforces exclusivity via `releaseFromQueue` / `releaseFromCourts` before assigning.
+- Break and Done players are non-draggable; their `onDragStart` calls `e.preventDefault()`.
 
 ## Acceptance Criteria
-- Drag-to-Court: Dragging a full Queue card (2 or 4 players) to a \<court> successfully moves all players and clears the Queue card.
-- Single Player Displacement: Dragging Player A onto a slot occupied by Player B in a Queue card correctly moves Player B to the "Idle" section and places Player A in that slot.
-- Status Synchronization: A player's "Timer" status immediately switches to "Waiting" upon entering the Queue and "Active/Playing" upon entering a Court.
-- Empty State: Queue cards display a clear placeholder (e.g., "Empty Slot") when they contain fewer than the required players.
-- Bulk Clear: Dragging a Queue card to the \<player-sidebar> returns all players on that card to the "Idle" list in one action.
-
+- Dragging a full queue card (4 players) to a court moves all players and sets their status to `playing`.
+- Dragging a queue card to the sidebar returns all its players to Idle and clears the card.
+- Dropping a player on an occupied slot correctly displaces the occupant to Idle.
+- A player's timer resets to `waiting` the moment they enter any queue slot.
+- All 3 queue cards are always visible in the rail; only their contents change.
 
 ## Constraints
-- No Odd Numbers: A Queue card must only represent a Singles (2 players) or Doubles (4 players) match; it cannot be "started" or dragged to a \<court> if it has 1 or 3 players.
-- No Duplicates: The same player cannot exist in two different Queue cards or a Court simultaneously.
-- Fixed Capacity: The Queue section is strictly limited to 3 cards; new matches cannot be created until one of the 3 slots is cleared or moved to a court.
-- Mobile Interaction: Drag-and-drop must be implemented using a library that supports touch-hold to prevent accidental dragging while scrolling on iPad/Mobile.
-- Visual Feedback: During a drag, the "Drop Zone" (Team A vs Team B) must be clearly highlighted to show exactly who is being displaced.
-
+- Fixed at **3 queue cards** — no add/remove.
+- Queue cards currently support **doubles only** (4-slot format).
+- Break/Done players are non-draggable (drag prevented via `e.preventDefault()` in `onDragStart`).
+- No per-slot timer intervals — timers are driven by the single `setInterval` in the parent section.
+- Layout: rail is hidden below `xl` breakpoint (`hidden xl:block`).

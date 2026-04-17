@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useStore, selectors } from "@/lib/store";
 import type { Player } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Eyebrow } from "@/components/ui/chip";
 import { AddPlayerDialog } from "@/components/dialogs/add-player-dialog";
 import { EditPlayerDialog } from "@/components/dialogs/edit-player-dialog";
 import { IdleSection } from "./idle-section";
@@ -72,22 +71,10 @@ export function PlayerSidebar() {
     >
       {/* Masthead ------------------------------------------------------- */}
       <header className="shrink-0 px-4 pt-5 pb-3 rule-bottom">
-        <div className="flex items-baseline justify-between">
-          <div>
-            <Eyebrow>Roster</Eyebrow>
-            <h2 className="statement text-[32px] mt-1 leading-none">
-              Players
-            </h2>
-          </div>
-          <div className="text-right">
-            <div className="font-mono text-[9px] uppercase tracking-[0.24em] text-bone-4">
-              Signed-in
-            </div>
-            <div className="big-number digit text-[26px] mt-0.5">
-              {String(total).padStart(2, "0")}
-            </div>
-          </div>
-        </div>
+        <h2 className="statement text-[28px] leading-none flex items-baseline gap-2">
+          <span className="big-number digit text-[28px]">{String(total).padStart(2, "0")}</span>
+          Players
+        </h2>
 
         <div className="mt-4 flex items-stretch gap-2">
           <div className="relative flex-1">
@@ -118,7 +105,7 @@ export function PlayerSidebar() {
       </header>
 
       {/* Sections ------------------------------------------------------- */}
-      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <IdleSection
           players={idle}
           tick={tick}

@@ -39,7 +39,7 @@ function EmptyCourts({ onAdd }: { onAdd: () => void }) {
         <br />
         Add one to <span className="text-neon">open the floor.</span>
       </h3>
-      <Button variant="neon" className="mt-6" onClick={onAdd}>
+      <Button variant="solid" className="mt-6" onClick={onAdd}>
         + Add first court
       </Button>
     </div>

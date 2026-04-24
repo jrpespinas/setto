@@ -25,8 +25,7 @@ export function FinishMatchDialog({
     >
       <div className="space-y-4">
         <p className="text-bone-2 text-sm leading-relaxed">
-          Who won? Wins, losses, and games-played are recorded against the
-          match result. This cannot be undone.
+          Select the winning side to close the match.
         </p>
         <div className="grid grid-cols-2 gap-2">
           <SidePick
@@ -57,7 +56,7 @@ export function FinishMatchDialog({
             Draw · no record
           </div>
           <div className="font-display italic text-sm text-bone-3 group-hover:text-bone mt-0.5">
-            End without recording wins or losses
+            End without declaring a winner
           </div>
         </button>
         <div className="flex justify-end pt-3 border-t-[0.5px] border-hairline-2">

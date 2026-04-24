@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type DragEvent, type ReactNode } from "react";
+import { useState, type DragEvent, type ReactNode, type ReactElement } from "react";
 import type { PlayerStatus } from "@/lib/types";
 import { useStore } from "@/lib/store";
 
@@ -16,6 +16,7 @@ export function SectionShell({
   dropTarget,
   children,
   emptyState,
+  headerExtra,
   className = "",
 }: {
   title: string;
@@ -26,6 +27,7 @@ export function SectionShell({
   dropTarget: PlayerStatus;
   children: ReactNode;
   emptyState: ReactNode;
+  headerExtra?: ReactElement;
   className?: string;
 }) {
   const setStatus = useStore((s) => s.setStatus);
@@ -64,6 +66,7 @@ export function SectionShell({
     >
       {/* Sticky header — pins to top of scroll container when scrolling past */}
       <header className="sticky top-0 z-10 bg-ink-050 rule-bottom">
+        {headerExtra && <div className="px-4 pt-2 pb-1.5 rule-bottom">{headerExtra}</div>}
         <button
           onClick={onToggleCollapse}
           className="w-full text-left px-4 pt-3 pb-2.5 flex items-center justify-between gap-2 cursor-pointer group"
@@ -76,7 +79,7 @@ export function SectionShell({
           </div>
           <div className="flex items-center gap-2">
             <span className="big-number digit text-[22px] text-bone-3 group-hover:text-bone transition-colors">
-              {String(count).padStart(2, "0")}
+              {count}
             </span>
             <span
               className={`font-mono text-[10px] text-bone-3 group-hover:text-bone transition-transform duration-200 ease-out ${collapsed ? "-rotate-90" : "rotate-0"}`}

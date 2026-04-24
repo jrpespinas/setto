@@ -90,6 +90,8 @@ type Actions = {
 
   assignToCourtSlot: (courtId: string, slotIndex: number, playerId: string) => void;
   releaseCourtSlot: (courtId: string, slotIndex: number) => void;
+  bulkAssignToCourt: (courtId: string, sideAIds: string[], sideBIds: string[]) => void;
+  swapCourtSlots: (courtId: string, slotIndexA: number, slotIndexB: number) => void;
 
   assignToQueueSlot: (queueId: string, slotIndex: number, playerId: string) => void;
   releaseQueueSlot: (queueId: string, slotIndex: number) => void;
@@ -199,8 +201,6 @@ export const useStore = create<SettoStore>()(
                 arrivedAt: now(),
                 statusSince: now(),
                 gamesPlayed: 0,
-                wins: 0,
-                losses: 0,
               },
             ],
           },
@@ -272,6 +272,70 @@ export const useStore = create<SettoStore>()(
         });
       },
 
+      bulkAssignToCourt(courtId, sideAIds, sideBIds) {
+        set(({ session }) => {
+          const court = session.courts.find((c) => c.id === courtId);
+          if (!court) return { session };
+
+          const half = court.size / 2;
+          const allIncoming = [...sideAIds, ...sideBIds].filter(Boolean);
+
+          // Displaced = players currently in the target court who aren't being re-assigned
+          const displaced = court.slots
+            .filter((id): id is string => !!id && !allIncoming.includes(id));
+
+          // Build new slot array
+          const newSlots: (string | null)[] = Array(court.size).fill(null);
+          sideAIds.forEach((id, i) => { if (i < half) newSlots[i] = id; });
+          sideBIds.forEach((id, i) => { if (i < half) newSlots[half + i] = id; });
+
+          // Release incoming players from wherever they currently are
+          let queue = session.queue;
+          let courts = session.courts;
+          for (const id of allIncoming) {
+            queue = releaseFromQueue(queue, id);
+            courts = releaseFromCourts(courts, id);
+          }
+
+          const matchTs = now();
+          const allPlayerIds = new Set(session.players.map((p) => p.id));
+          courts = courts.map((c) => {
+            if (c.id !== courtId) return c;
+            const nextCourt = { ...c, slots: newSlots };
+            return {
+              ...nextCourt,
+              matchStartedAt: courtIsOngoing(nextCourt, allPlayerIds) ? matchTs : undefined,
+            };
+          });
+
+          const players = session.players.map((p) => {
+            if (allIncoming.includes(p.id)) {
+              return { ...p, status: "playing" as PlayerStatus, statusSince: matchTs };
+            }
+            if (displaced.includes(p.id)) {
+              return { ...p, status: "idle" as PlayerStatus, statusSince: now() };
+            }
+            return p;
+          });
+
+          return { session: { ...session, courts, queue, players } };
+        });
+      },
+
+      swapCourtSlots(courtId, slotIndexA, slotIndexB) {
+        set(({ session }) => ({
+          session: {
+            ...session,
+            courts: session.courts.map((c) => {
+              if (c.id !== courtId) return c;
+              const slots = [...c.slots];
+              [slots[slotIndexA], slots[slotIndexB]] = [slots[slotIndexB], slots[slotIndexA]];
+              return { ...c, slots };
+            }),
+          },
+        }));
+      },
+
       releaseCourtSlot(courtId, slotIndex) {
         set(({ session }) => {
           const court = session.courts.find((c) => c.id === courtId);
@@ -320,7 +384,7 @@ export const useStore = create<SettoStore>()(
           const courts = releaseFromCourts(session.courts, playerId);
           const players = session.players.map((p) => {
             if (p.id === playerId) {
-              return { ...p, status: "waiting" as PlayerStatus, statusSince: now() };
+              return { ...p, status: "waiting" as PlayerStatus };
             }
             if (p.id === displacedId) {
               return { ...p, status: "idle" as PlayerStatus, statusSince: now() };
@@ -348,7 +412,7 @@ export const useStore = create<SettoStore>()(
               ),
               players: session.players.map((p) =>
                 p.id === released
-                  ? { ...p, status: "idle" as PlayerStatus, statusSince: now() }
+                  ? { ...p, status: "idle" as PlayerStatus }
                   : p,
               ),
             },
@@ -382,11 +446,11 @@ export const useStore = create<SettoStore>()(
             };
           });
 
-          const queue = session.queue.map((qq) =>
-            qq.id === queueId
-              ? { ...qq, slots: Array(qq.slots.length).fill(null) }
-              : qq,
-          );
+          const cleared = { ...q, slots: Array(q.slots.length).fill(null) };
+          const queue = [
+            ...session.queue.filter((qq) => qq.id !== queueId),
+            cleared,
+          ];
 
           const players = session.players.map((p) => {
             if (incoming.includes(p.id)) {
@@ -416,7 +480,7 @@ export const useStore = create<SettoStore>()(
               ),
               players: session.players.map((p) =>
                 ids.includes(p.id)
-                  ? { ...p, status: "idle" as PlayerStatus, statusSince: now() }
+                  ? { ...p, status: "idle" as PlayerStatus }
                   : p,
               ),
             },
@@ -435,17 +499,11 @@ export const useStore = create<SettoStore>()(
 
           const players = session.players.map((p) => {
             if (!ids.includes(p.id)) return p;
-            if (winner === "none") {
-              return { ...p, status: "idle" as PlayerStatus, statusSince: now() };
-            }
-            const won = (winner === "A" ? A : B).includes(p.id);
             return {
               ...p,
               status: "idle" as PlayerStatus,
               statusSince: now(),
-              gamesPlayed: p.gamesPlayed + 1,
-              wins: won ? p.wins + 1 : p.wins,
-              losses: won ? p.losses : p.losses + 1,
+              gamesPlayed: (p.gamesPlayed ?? 0) + 1,
             };
           });
 

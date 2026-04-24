@@ -24,6 +24,7 @@ export function PlayerSidebar() {
     break: false,
     done: false,
   });
+  const [groupByLevel, setGroupByLevel] = useState(false);
   const [tick, setTick] = useState(() => Date.now());
 
   useEffect(() => {
@@ -39,10 +40,7 @@ export function PlayerSidebar() {
 
     // Idle: fewest games first, then longest wait.
     const idleSorted = [...selectors.idle(session)].sort(
-      (a, b) =>
-        a.gamesPlayed - b.gamesPlayed ||
-        a.statusSince - b.statusSince ||
-        a.arrivedAt - b.arrivedAt,
+      (a, b) => a.statusSince - b.statusSince || a.arrivedAt - b.arrivedAt,
     );
     const breakSorted = [...selectors.breakList(session)].sort(
       (a, b) => a.statusSince - b.statusSince,
@@ -72,7 +70,7 @@ export function PlayerSidebar() {
       {/* Masthead ------------------------------------------------------- */}
       <header className="shrink-0 px-4 pt-5 pb-3 rule-bottom">
         <h2 className="statement text-[28px] leading-none flex items-baseline gap-2">
-          <span className="big-number digit text-[28px]">{String(total).padStart(2, "0")}</span>
+          <span className="big-number digit text-[28px]">{total}</span>
           Players
         </h2>
 
@@ -98,7 +96,7 @@ export function PlayerSidebar() {
               </span>
             )}
           </div>
-          <Button variant="neon" size="sm" onClick={() => setAddOpen(true)}>
+          <Button variant="solid" size="sm" onClick={() => setAddOpen(true)}>
             + Add
           </Button>
         </div>
@@ -114,6 +112,8 @@ export function PlayerSidebar() {
             setCollapsed((c) => ({ ...c, idle: !c.idle }))
           }
           onEdit={setEditing}
+          groupByLevel={groupByLevel}
+          onToggleGroup={() => setGroupByLevel((v) => !v)}
         />
         <BreakSection
           players={breakList}

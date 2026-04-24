@@ -25,11 +25,6 @@ export function PlayerCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const elapsed = tick - player.statusSince;
-  const winRate =
-    player.gamesPlayed > 0
-      ? Math.round((player.wins / player.gamesPlayed) * 100)
-      : null;
-
   const rail = variant === "idle"
     ? "bg-bone-3"
     : variant === "break"
@@ -66,8 +61,8 @@ export function PlayerCard({
 
       {/* Card body — blurs behind the overlay on hover */}
       <div className="flex items-start gap-2 transition-all duration-200 group-hover:opacity-20 group-hover:blur-[2px] pointer-events-none select-none">
-        <span className="font-mono digit text-[10px] tracking-[0.14em] text-bone-4 pt-[3px] w-5 text-right shrink-0">
-          {String(index).padStart(2, "0")}
+        <span className="font-mono digit text-[10px] tracking-[0.14em] text-bone-4 pt-[3px] w-4 text-right shrink-0">
+          {index}
         </span>
 
         <div className="flex-1 min-w-0">
@@ -85,26 +80,18 @@ export function PlayerCard({
                 {LEVEL_LABEL[player.level]}
               </Chip>
             </div>
-            <span className="font-mono digit text-[11px] tracking-[0.1em] text-bone-3 shrink-0">
-              {formatShortDuration(elapsed)}
-            </span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {player.gamesPlayed > 0 && (
+                <span className="font-mono text-[9px] tracking-[0.1em] text-bone-4">
+                  {player.gamesPlayed}g
+                </span>
+              )}
+              <span className="font-mono digit text-[11px] tracking-[0.1em] text-bone-3">
+                {formatShortDuration(elapsed)}
+              </span>
+            </div>
           </div>
 
-          <div className="mt-1 flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] text-bone-2">
-            <span className="digit">{player.gamesPlayed}g</span>
-            <span className="text-bone-4">·</span>
-            <span className="digit">
-              <span className="text-bone-2">{player.wins}</span>
-              /
-              <span className="text-bone-4">{player.losses}</span>
-            </span>
-            {winRate !== null && (
-              <>
-                <span className="text-bone-4">·</span>
-                <span className="digit text-neon">{winRate}%</span>
-              </>
-            )}
-          </div>
         </div>
       </div>
 

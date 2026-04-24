@@ -5,7 +5,7 @@ import { useStore } from "@/lib/store";
 import {
   GENDER_LABEL,
   LEVELS,
-  LEVEL_LABEL,
+  LEVEL_FULL_LABEL,
   type Gender,
   type Level,
   type Player,
@@ -30,8 +30,6 @@ export function EditPlayerDialog({
   const [name, setName] = useState("");
   const [gender, setGender] = useState<Gender>("male");
   const [level, setLevel] = useState<Level>("intermediate");
-  const [wins, setWins] = useState(0);
-  const [losses, setLosses] = useState(0);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -39,8 +37,6 @@ export function EditPlayerDialog({
       setName(player.name);
       setGender(player.gender);
       setLevel(player.level);
-      setWins(player.wins);
-      setLosses(player.losses);
       setError("");
     }
   }, [player]);
@@ -70,14 +66,10 @@ export function EditPlayerDialog({
             setError("Another player has the same name + level + gender.");
             return;
           }
-          const gamesPlayed = Math.max(0, wins + losses);
           updatePlayer(player.id, {
             name: name.trim(),
             gender,
             level,
-            wins: Math.max(0, wins),
-            losses: Math.max(0, losses),
-            gamesPlayed,
           });
           onClose();
         }}
@@ -108,34 +100,17 @@ export function EditPlayerDialog({
         </Field>
 
         <Field label="Level">
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
             {LEVELS.map((lv) => (
               <Toggle
                 key={lv}
                 active={level === lv}
                 onClick={() => setLevel(lv)}
-                label={LEVEL_LABEL[lv]}
+                label={LEVEL_FULL_LABEL[lv]}
               />
             ))}
           </div>
         </Field>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Wins">
-            <TextInput
-              type="number"
-              value={wins}
-              onChange={(v) => setWins(Number(v))}
-            />
-          </Field>
-          <Field label="Losses">
-            <TextInput
-              type="number"
-              value={losses}
-              onChange={(v) => setLosses(Number(v))}
-            />
-          </Field>
-        </div>
 
         {error ? (
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-alert">
@@ -147,7 +122,7 @@ export function EditPlayerDialog({
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="neon">
+          <Button type="submit" variant="solid">
             Save
           </Button>
         </div>

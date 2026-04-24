@@ -15,7 +15,7 @@ A fixed 260px vertical rail positioned to the right of the courts grid. Contains
 - Individual players can be dragged from the sidebar or another slot into a specific queue slot (`assignToQueueSlot`).
   - If the target slot is occupied, the existing player is displaced to Idle.
 - Individual players can be dragged out of a queue slot back to Idle by releasing on the sidebar or via `releaseQueueSlot`.
-- When a player enters any queue slot, their status becomes **`waiting`** and their `statusSince` timer resets.
+- When a player enters any queue slot, their status becomes **`waiting`** and their `statusSince` timer is **preserved** — accumulated wait time carries through from Idle into the queue. The timer only resets when the player is promoted to a court (`playing`).
 - **All players (Idle, Break, Done) are draggable into queue slots** — there is no restriction based on current status.
 
 ## Player Cell Layout (Queue Slot)
@@ -57,7 +57,7 @@ Same ranking tier chips as the sidebar player cards:
 - Dragging a full queue card (4 players) to a court moves all players and sets their status to `playing`.
 - Dragging a queue card to the sidebar returns all its players to Idle and clears the card.
 - Dropping a player on an occupied slot correctly displaces the occupant to Idle.
-- A player's timer resets to `waiting` the moment they enter any queue slot.
+- A player's accumulated wait time is preserved when they enter a queue slot — `statusSince` is not reset until they are promoted to a court.
 - All 3 queue cards are always visible in the rail; only their contents change.
 
 ## Constraints

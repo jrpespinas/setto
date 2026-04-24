@@ -33,8 +33,7 @@ export function ConfirmDeleteCourtDialog({
           <div className="border-l-[0.5px] border-alert pl-3 py-1">
             <Chip tone="alert">Ongoing match</Chip>
             <p className="text-bone-2 text-sm mt-2 leading-relaxed">
-              The in-progress match will not be recorded. No wins, losses, or
-              games count for the current players.
+              The in-progress match will not be recorded. No games will be counted for the current players.
             </p>
           </div>
         ) : null}

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { forwardRef, type ReactNode } from "react";
 
 export function Field({
   label,
@@ -19,24 +19,16 @@ export function Field({
   );
 }
 
-export function TextInput({
-  value,
-  onChange,
-  placeholder,
-  autoFocus,
-  type = "text",
-  className = "",
-}: {
+export const TextInput = forwardRef<HTMLInputElement, {
   value: string | number;
   onChange: (v: string) => void;
   placeholder?: string;
-  autoFocus?: boolean;
   type?: "text" | "number";
   className?: string;
-}) {
+}>(function TextInput({ value, onChange, placeholder, type = "text", className = "" }, ref) {
   return (
     <input
-      autoFocus={autoFocus}
+      ref={ref}
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
@@ -51,7 +43,7 @@ export function TextInput({
       `}
     />
   );
-}
+});
 
 export function Toggle({
   active,
@@ -70,7 +62,7 @@ export function Toggle({
         flex-1 h-9 px-3 font-mono text-[11px] uppercase tracking-[0.22em]
         border-[0.5px] cursor-pointer transition-colors whitespace-nowrap
         ${active
-          ? "bg-neon text-ink-000 border-neon"
+          ? "bg-bone text-ink-000 border-bone"
           : "bg-transparent text-bone-2 border-hairline-2 hover:border-bone hover:text-bone"}
       `}
     >

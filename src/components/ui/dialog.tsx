@@ -8,12 +8,14 @@ export function Dialog({
   title,
   eyebrow,
   children,
+  placement = "center",
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   eyebrow?: string;
   children: ReactNode;
+  placement?: "center" | "top-right";
 }) {
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -38,8 +40,9 @@ export function Dialog({
       onClick={(e) => {
         if (e.target === ref.current) onClose();
       }}
+      data-placement={placement === "top-right" ? "top-right" : undefined}
       className="bg-ink-100 text-bone p-0 max-w-[min(540px,92vw)] w-full
-                 backdrop:bg-black/70 backdrop:backdrop-blur-sm
+                 backdrop:bg-black/30
                  border-[0.5px] border-hairline-3 rounded-none
                  shadow-[0_24px_80px_-12px_rgba(0,0,0,0.7)] slide-in"
     >

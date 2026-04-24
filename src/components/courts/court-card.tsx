@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { useEffect, useState, type DragEvent } from "react";
 import { useStore } from "@/lib/store";
 import {
   LEVEL_LABEL,
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Chip, LiveDot } from "@/components/ui/chip";
 import { EditCourtDialog } from "@/components/dialogs/edit-court-dialog";
 import { ConfirmDeleteCourtDialog } from "@/components/dialogs/confirm-delete-court-dialog";
-import { FinishMatchDialog } from "@/components/dialogs/finish-match-dialog";
+import { CourtPlayerPicker } from "./court-player-picker";
 
 export function CourtCard({
   court,
@@ -23,17 +23,19 @@ export function CourtCard({
   playersById: Record<string, Player>;
   revealIndex: number;
 }) {
-  const assignToCourtSlot = useStore((s) => s.assignToCourtSlot);
-  const releaseCourtSlot = useStore((s) => s.releaseCourtSlot);
-  const removeCourt = useStore((s) => s.removeCourt);
-  const finishMatch = useStore((s) => s.finishMatch);
+  const assignToCourtSlot   = useStore((s) => s.assignToCourtSlot);
+  const releaseCourtSlot    = useStore((s) => s.releaseCourtSlot);
+  const swapCourtSlots      = useStore((s) => s.swapCourtSlots);
+  const removeCourt         = useStore((s) => s.removeCourt);
+  const finishMatch         = useStore((s) => s.finishMatch);
   const promoteQueueToCourt = useStore((s) => s.promoteQueueToCourt);
 
-  const [edit, setEdit] = useState(false);
+  const [edit, setEdit]                   = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [finish, setFinish] = useState(false);
-  const [queueOver, setQueueOver] = useState(false);
-  const [tick, setTick] = useState(() => Date.now());
+  const [confirming, setConfirming]       = useState(false);
+  const [pickerOpen, setPickerOpen]       = useState(false);
+  const [queueOver, setQueueOver]         = useState(false);
+  const [tick, setTick]                   = useState(() => Date.now());
 
   useEffect(() => {
     if (!court.matchStartedAt) return;
@@ -41,20 +43,16 @@ export function CourtCard({
     return () => window.clearInterval(id);
   }, [court.matchStartedAt]);
 
-  const half = court.size / 2;
-  const teamA = court.slots.slice(0, half);
-  const teamB = court.slots.slice(half);
-  const status = courtStatus(court, playersById);
-  const ongoing = status === "ongoing";
+  const half      = court.size / 2;
+  const teamA     = court.slots.slice(0, half);
+  const teamB     = court.slots.slice(half);
+  const status    = courtStatus(court, playersById);
+  const ongoing   = status === "ongoing";
+  const isVacant  = court.slots.every((s) => !s);
 
-  const teamANames = teamA
-    .map((id) => (id ? playersById[id]?.name : null))
-    .filter(Boolean) as string[];
-  const teamBNames = teamB
-    .map((id) => (id ? playersById[id]?.name : null))
-    .filter(Boolean) as string[];
-
-  const canFinish = teamANames.length === teamBNames.length && teamANames.length > 0;
+  const filledA   = teamA.filter((id) => id && playersById[id]).length;
+  const filledB   = teamB.filter((id) => id && playersById[id]).length;
+  const canFinish = filledA > 0 && filledA === filledB;
 
   return (
     <>
@@ -71,7 +69,6 @@ export function CourtCard({
           setQueueOver(true);
         }}
         onDragLeave={(e) => {
-          // only clear when leaving the article itself, not a child
           if (!e.currentTarget.contains(e.relatedTarget as Node)) setQueueOver(false);
         }}
         onDrop={(e) => {
@@ -115,54 +112,93 @@ export function CourtCard({
           <TeamCol
             slots={teamA}
             offset={0}
+            half={half}
             courtId={court.id}
             playersById={playersById}
             onAssign={assignToCourtSlot}
             onRelease={releaseCourtSlot}
+            onSwap={(absIdx) =>
+              swapCourtSlots(court.id, absIdx, absIdx < half ? absIdx + half : absIdx - half)
+            }
             label="A"
           />
           <div className="flex items-center justify-center px-3 border-x-2 border-white/70">
-            <span className="font-display italic text-white/80 text-xs tracking-wide">
-              vs
-            </span>
+            <span className="font-display italic text-white/80 text-xs tracking-wide">vs</span>
           </div>
           <TeamCol
             slots={teamB}
             offset={half}
+            half={half}
             courtId={court.id}
             playersById={playersById}
             onAssign={assignToCourtSlot}
             onRelease={releaseCourtSlot}
+            onSwap={(absIdx) =>
+              swapCourtSlots(court.id, absIdx, absIdx < half ? absIdx + half : absIdx - half)
+            }
             label="B"
           />
         </div>
 
         {/* footer ---------------------------------------------------- */}
-        <footer className="flex items-center justify-between px-3 py-2 rule-top">
-          <div className="flex gap-0.5">
-            <Button size="xs" variant="ghost" onClick={() => setEdit(true)}>
-              Edit
-            </Button>
-            <Button
-              size="xs"
-              variant="ghost"
-              className="hover:text-alert"
-              onClick={() => setConfirmDelete(true)}
-            >
-              Delete
-            </Button>
-          </div>
-          <Button
-            size="sm"
-            variant={canFinish ? "neon" : "outline"}
-            disabled={!canFinish}
-            onClick={() => setFinish(true)}
-          >
-            Finish match
-          </Button>
-        </footer>
+        {confirming ? (
+            <footer className="flex items-center justify-between px-3 py-2 rule-top bg-neon-ghost">
+              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone-2">
+                End this match?
+              </span>
+              <div className="flex items-center gap-1.5">
+                <Button size="xs" variant="ghost" onClick={() => setConfirming(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  variant="neon"
+                  onClick={() => { finishMatch(court.id, "none"); setConfirming(false); }}
+                >
+                  Confirm
+                </Button>
+              </div>
+            </footer>
+          ) : (
+            <footer className="flex items-center justify-between px-3 py-2 rule-top">
+              <div className="flex gap-0.5">
+                <Button size="xs" variant="ghost" onClick={() => setEdit(true)}>Edit</Button>
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  className="hover:text-alert"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  Delete
+                </Button>
+              </div>
+              {isVacant ? (
+                <Button size="sm" variant="solid" onClick={() => setPickerOpen(true)}>
+                  + Add players
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant={canFinish ? "neon" : "outline"}
+                  disabled={!canFinish}
+                  onClick={() => setConfirming(true)}
+                >
+                  Finish match
+                </Button>
+              )}
+            </footer>
+          )
+        }
       </article>
 
+      <CourtPlayerPicker
+        open={pickerOpen}
+        courtId={court.id}
+        courtNumber={court.number}
+        courtSize={court.size}
+        tick={tick}
+        onClose={() => setPickerOpen(false)}
+      />
       <EditCourtDialog
         open={edit}
         onClose={() => setEdit(false)}
@@ -177,13 +213,6 @@ export function CourtCard({
         courtNumber={court.number}
         isOngoing={ongoing}
       />
-      <FinishMatchDialog
-        open={finish}
-        onClose={() => setFinish(false)}
-        onFinish={(winner) => finishMatch(court.id, winner)}
-        teamANames={teamANames}
-        teamBNames={teamBNames}
-      />
     </>
   );
 }
@@ -191,18 +220,22 @@ export function CourtCard({
 function TeamCol({
   slots,
   offset,
+  half,
   courtId,
   playersById,
   onAssign,
   onRelease,
+  onSwap,
   label,
 }: {
   slots: (string | null)[];
   offset: number;
+  half: number;
   courtId: string;
   playersById: Record<string, Player>;
   onAssign: (courtId: string, slotIndex: number, playerId: string) => void;
   onRelease: (courtId: string, slotIndex: number) => void;
+  onSwap: (absoluteSlotIndex: number) => void;
   label: string;
 }) {
   return (
@@ -217,6 +250,7 @@ function TeamCol({
               player={playerId ? playersById[playerId] : undefined}
               onDrop={(id) => onAssign(courtId, offset + i, id)}
               onRelease={() => onRelease(courtId, offset + i)}
+              onSwap={() => onSwap(offset + i)}
             />
           </div>
         ))}
@@ -229,10 +263,12 @@ function Slot({
   player,
   onDrop,
   onRelease,
+  onSwap,
 }: {
   player?: Player;
   onDrop: (playerId: string) => void;
   onRelease: () => void;
+  onSwap: () => void;
 }) {
   const [over, setOver] = useState(false);
 
@@ -260,20 +296,27 @@ function Slot({
           <span className="font-display font-semibold text-[13px] leading-tight text-[#0e1018] truncate">
             {player.name}
           </span>
-          <Chip
-            tone={`level-${player.level}`}
-            className="text-[8px] px-1 py-[2px] shrink-0"
-          >
+          <Chip tone={`level-${player.level}`} className="text-[8px] px-1 py-[2px] shrink-0">
             {LEVEL_LABEL[player.level]}
           </Chip>
         </div>
-        <button
-          onClick={onRelease}
-          aria-label={`Remove ${player.name}`}
-          className="shrink-0 font-mono text-[11px] text-[#0e1018]/40 hover:text-[#0e1018] cursor-pointer px-1.5"
-        >
-          ×
-        </button>
+        <div className="flex items-center shrink-0">
+          <button
+            onClick={onSwap}
+            aria-label="Switch sides"
+            title="Switch sides"
+            className="font-mono text-[11px] text-[#0e1018]/35 hover:text-[#0e1018] cursor-pointer px-1"
+          >
+            ⇄
+          </button>
+          <button
+            onClick={onRelease}
+            aria-label={`Remove ${player.name}`}
+            className="font-mono text-[11px] text-[#0e1018]/40 hover:text-[#0e1018] cursor-pointer px-1"
+          >
+            ×
+          </button>
+        </div>
       </div>
     );
   }
@@ -299,8 +342,8 @@ function Slot({
 
 function MatchTimer({ startedAt, tick }: { startedAt: number; tick: number }) {
   const elapsedMs = tick - startedAt;
-  const AMBER_MS = 12 * 60 * 1000;
-  const RED_MS   = 15 * 60 * 1000;
+  const AMBER_MS  = 12 * 60 * 1000;
+  const RED_MS    = 15 * 60 * 1000;
 
   const totalSec = Math.floor(elapsedMs / 1000);
   const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");

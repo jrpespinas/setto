@@ -30,8 +30,6 @@ export type Player = {
   /** Timestamp the current status began — drives all section timers. */
   statusSince: number;
   gamesPlayed: number;
-  wins: number;
-  losses: number;
 };
 
 export type Court = {

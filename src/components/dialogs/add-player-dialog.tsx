@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
-import { GENDER_LABEL, LEVELS, LEVEL_LABEL, type Gender, type Level } from "@/lib/types";
+import { GENDER_LABEL, LEVELS, LEVEL_FULL_LABEL, type Gender, type Level } from "@/lib/types";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Field, TextInput, Toggle } from "./field";
@@ -20,6 +20,15 @@ export function AddPlayerDialog({
   const [level, setLevel] = useState<Level>("intermediate");
   const [paid, setPaid] = useState(false);
   const [error, setError] = useState("");
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  // Programmatic focus works on mobile where autoFocus is suppressed in modals.
+  // 120ms delay lets the modal animation finish before the keyboard is invoked.
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => nameRef.current?.focus(), 120);
+    return () => clearTimeout(t);
+  }, [open]);
 
   const reset = () => {
     setName("");
@@ -36,6 +45,7 @@ export function AddPlayerDialog({
       }}
       eyebrow="Roster / New"
       title="Add player"
+      placement="top-right"
     >
       <form
         onSubmit={(e) => {
@@ -53,7 +63,7 @@ export function AddPlayerDialog({
       >
         <Field label="Name">
           <TextInput
-            autoFocus
+            ref={nameRef}
             value={name}
             onChange={(v) => {
               setName(v);
@@ -80,7 +90,7 @@ export function AddPlayerDialog({
         </Field>
 
         <Field label="Level">
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
             {LEVELS.map((lv) => (
               <Toggle
                 key={lv}
@@ -89,7 +99,7 @@ export function AddPlayerDialog({
                   setLevel(lv);
                   if (error) setError("");
                 }}
-                label={LEVEL_LABEL[lv]}
+                label={LEVEL_FULL_LABEL[lv]}
               />
             ))}
           </div>
@@ -119,7 +129,7 @@ export function AddPlayerDialog({
           >
             Cancel
           </Button>
-          <Button type="submit" variant="neon">
+          <Button type="submit" variant="solid">
             Add
           </Button>
         </div>

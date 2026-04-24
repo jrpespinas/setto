@@ -90,7 +90,7 @@ function QueueCardRow({
             </span>
           )}
           <span className="font-mono digit text-[9px] text-bone-4 tracking-[0.14em]">
-            Q·{String(index).padStart(2, "0")}
+            Q·{index}
           </span>
           <Chip tone={isReady ? "neon" : "muted"}>
             {isReady ? <LiveDot className="bg-ink-000" /> : null}

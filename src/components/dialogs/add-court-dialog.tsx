@@ -28,7 +28,7 @@ export function AddCourtDialog({
         <div className="flex justify-end gap-2 pt-3 border-t-[0.5px] border-hairline-2">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button
-            variant="neon"
+            variant="solid"
             onClick={() => {
               addCourt(size);
               onClose();

@@ -24,8 +24,9 @@ export const TextInput = forwardRef<HTMLInputElement, {
   onChange: (v: string) => void;
   placeholder?: string;
   type?: "text" | "number";
+  autoFocus?: boolean;
   className?: string;
-}>(function TextInput({ value, onChange, placeholder, type = "text", className = "" }, ref) {
+}>(function TextInput({ value, onChange, placeholder, type = "text", autoFocus, className = "" }, ref) {
   return (
     <input
       ref={ref}
@@ -33,6 +34,7 @@ export const TextInput = forwardRef<HTMLInputElement, {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
+      autoFocus={autoFocus}
       className={`
         w-full bg-transparent
         border-[0.5px] border-hairline-2 focus:border-bone

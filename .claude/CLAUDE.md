@@ -27,6 +27,7 @@ npm run start    # Start production server
 | Styling | Tailwind CSS v4 (@tailwindcss/postcss) |
 | State/Storage | Zustand + persist middleware (LocalStorage) |
 | DnD Engine | @dnd-kit |
+| Icons | Lucide React (`lucide-react`) — SVG, tree-shakeable. Gender: `Mars`/`Venus` with `fill="currentColor" strokeWidth={0}`. UI icons: `strokeWidth={2.5}` at small sizes. |
 | Fonts | Instrument Sans (Display) + Geist Sans (UI/Body) |
 | Offline Support | Serwist (PWA / Service Workers) |
 

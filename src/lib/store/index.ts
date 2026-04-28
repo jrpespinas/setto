@@ -104,6 +104,7 @@ type Actions = {
   setStatus: (playerId: string, status: PlayerStatus) => void;
 
   resetAll: () => void;
+  restoreSession: (session: Session) => void;
 };
 
 export type SettoStore = {
@@ -169,7 +170,7 @@ export const useStore = create<SettoStore>()(
               courts: session.courts.filter((c) => c.id !== id),
               players: session.players.map((p) =>
                 freed.has(p.id)
-                  ? { ...p, status: "idle" as PlayerStatus, statusSince: now() }
+                  ? { ...p, status: "idle" as PlayerStatus }
                   : p,
               ),
             },
@@ -261,10 +262,10 @@ export const useStore = create<SettoStore>()(
 
           const players = session.players.map((p) => {
             if (p.id === playerId) {
-              return { ...p, status: "playing" as PlayerStatus, statusSince: now() };
+              return { ...p, status: "playing" as PlayerStatus };
             }
             if (p.id === displacedId) {
-              return { ...p, status: "idle" as PlayerStatus, statusSince: now() };
+              return { ...p, status: "idle" as PlayerStatus };
             }
             return p;
           });
@@ -310,10 +311,10 @@ export const useStore = create<SettoStore>()(
 
           const players = session.players.map((p) => {
             if (allIncoming.includes(p.id)) {
-              return { ...p, status: "playing" as PlayerStatus, statusSince: matchTs };
+              return { ...p, status: "playing" as PlayerStatus };
             }
             if (displaced.includes(p.id)) {
-              return { ...p, status: "idle" as PlayerStatus, statusSince: now() };
+              return { ...p, status: "idle" as PlayerStatus };
             }
             return p;
           });
@@ -357,7 +358,7 @@ export const useStore = create<SettoStore>()(
               }),
               players: session.players.map((p) =>
                 p.id === released
-                  ? { ...p, status: "idle" as PlayerStatus, statusSince: now() }
+                  ? { ...p, status: "idle" as PlayerStatus }
                   : p,
               ),
             },
@@ -387,7 +388,7 @@ export const useStore = create<SettoStore>()(
               return { ...p, status: "waiting" as PlayerStatus };
             }
             if (p.id === displacedId) {
-              return { ...p, status: "idle" as PlayerStatus, statusSince: now() };
+              return { ...p, status: "idle" as PlayerStatus };
             }
             return p;
           });
@@ -454,10 +455,10 @@ export const useStore = create<SettoStore>()(
 
           const players = session.players.map((p) => {
             if (incoming.includes(p.id)) {
-              return { ...p, status: "playing" as PlayerStatus, statusSince: now() };
+              return { ...p, status: "playing" as PlayerStatus };
             }
             if (displaced.includes(p.id)) {
-              return { ...p, status: "idle" as PlayerStatus, statusSince: now() };
+              return { ...p, status: "idle" as PlayerStatus };
             }
             return p;
           });
@@ -520,18 +521,47 @@ export const useStore = create<SettoStore>()(
       },
 
       togglePaid(playerId) {
-        set(({ session }) => ({
-          session: {
-            ...session,
-            players: session.players.map((p) =>
-              p.id === playerId ? { ...p, paid: !p.paid } : p,
-            ),
-          },
-        }));
+        set(({ session }) => {
+          const player = session.players.find((p) => p.id === playerId);
+          if (!player) return { session };
+          const newPaid = !player.paid;
+          // Auto-remove when marking paid and player is already done
+          if (newPaid && player.status === "done") {
+            return {
+              session: {
+                ...session,
+                players: session.players.filter((p) => p.id !== playerId),
+                courts: releaseFromCourts(session.courts, playerId),
+                queue: releaseFromQueue(session.queue, playerId),
+              },
+            };
+          }
+          return {
+            session: {
+              ...session,
+              players: session.players.map((p) =>
+                p.id === playerId ? { ...p, paid: newPaid } : p,
+              ),
+            },
+          };
+        });
       },
 
       setStatus(playerId, status) {
         set(({ session }) => {
+          const player = session.players.find((p) => p.id === playerId);
+          if (!player) return { session };
+          // Auto-remove when marking done and player is already paid
+          if (status === "done" && player.paid) {
+            return {
+              session: {
+                ...session,
+                players: session.players.filter((p) => p.id !== playerId),
+                courts: releaseFromCourts(session.courts, playerId),
+                queue: releaseFromQueue(session.queue, playerId),
+              },
+            };
+          }
           const movedToBoard = status === "playing" || status === "waiting";
           const courts = movedToBoard
             ? session.courts
@@ -547,10 +577,9 @@ export const useStore = create<SettoStore>()(
               queue,
               players: session.players.map((p) => {
                 if (p.id !== playerId) return p;
-                // Preserve accumulated wait time when shuttling between idle ↔ break
-                const idleBreak = (p.status === "idle" || p.status === "break")
-                  && (status === "idle" || status === "break");
-                return { ...p, status, statusSince: idleBreak ? p.statusSince : now() };
+                // Only reset the wait timer when a player re-enters from "done" (fresh start).
+                // All other transitions preserve accumulated wait time.
+                return { ...p, status, statusSince: p.status === "done" ? now() : p.statusSince };
               }),
             },
           };
@@ -559,6 +588,10 @@ export const useStore = create<SettoStore>()(
 
       resetAll() {
         set({ session: seed() });
+      },
+
+      restoreSession(session) {
+        set({ session });
       },
     }),
     {

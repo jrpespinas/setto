@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { useStore } from "@/lib/store";
 import type { CourtSize } from "@/lib/types";
 import { Dialog } from "@/components/ui/dialog";
@@ -30,7 +31,11 @@ export function AddCourtDialog({
           <Button
             variant="solid"
             onClick={() => {
+              const prev = useStore.getState().session;
               addCourt(size);
+              toast("Court added", {
+                action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
+              });
               onClose();
             }}
           >

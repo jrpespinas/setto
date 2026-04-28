@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast, Toaster } from "sonner";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/chip";
@@ -23,8 +24,12 @@ export function Shell() {
 
   const handleReset = () => {
     if (confirmReset) {
+      const prev = useStore.getState().session;
       resetAll();
       setConfirmReset(false);
+      toast("Session cleared", {
+        action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
+      });
     } else {
       setConfirmReset(true);
       window.setTimeout(() => setConfirmReset(false), 3000);
@@ -50,6 +55,13 @@ export function Shell() {
   return (
     <>
       <ServiceWorkerRegister />
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: { background: "#ffffff", color: "#0e1018", border: "0.5px solid #e0e0e0" },
+          actionButtonStyle: { background: "#0e1018", color: "#ffffff" },
+        }}
+      />
       <div
         className="
           flex-1

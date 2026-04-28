@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Mars, Venus, X } from "lucide-react";
+import { toast } from "sonner";
 import { useStore } from "@/lib/store";
 import { LEVEL_LABEL, LEVELS, type Level, type Player } from "@/lib/types";
 import { formatShortDuration } from "@/lib/format";
@@ -106,11 +108,15 @@ export function CourtPlayerPicker({
   };
 
   const handleConfirm = () => {
+    const prev = useStore.getState().session;
     bulkAssignToCourt(
       courtId,
       sideA.filter(Boolean) as string[],
       sideB.filter(Boolean) as string[],
     );
+    toast(`Players assigned to Court ${String(courtNumber).padStart(2, "0")}`, {
+      action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
+    });
     handleClose();
   };
 
@@ -150,7 +156,7 @@ export function CourtPlayerPicker({
                 active={genderFilter === g}
                 onClick={() => setGenderFilter(g)}
               >
-                {g === "all" ? "All" : g === "male" ? "♂ Male" : "♀ Female"}
+                {g === "all" ? "All" : g === "male" ? "Male" : "Female"}
               </FilterChip>
             ))}
           </div>
@@ -171,9 +177,10 @@ export function CourtPlayerPicker({
                 <span className="font-mono digit text-[10px] tracking-[0.14em] text-bone-4 w-4 text-right shrink-0">
                   {i + 1}
                 </span>
-                <span className={`shrink-0 font-bold text-[11px] leading-none ${p.gender === "male" ? "g-male" : "g-female"}`}>
-                  {p.gender === "male" ? "♂" : "♀"}
-                </span>
+                {p.gender === "male"
+                  ? <Mars size={12} className="g-male shrink-0" strokeWidth={2} aria-hidden />
+                  : <Venus size={12} className="g-female shrink-0" strokeWidth={2} aria-hidden />
+                }
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   <span className="font-display font-semibold text-[15px] leading-[1.1] text-bone truncate">
                     {p.name}
@@ -253,9 +260,10 @@ function PickerSide({
               </span>
               <button
                 onClick={() => onRemove(id)}
-                className="shrink-0 font-mono text-[12px] text-bone-4 hover:text-alert cursor-pointer"
+                className="shrink-0 text-bone-4 hover:text-alert cursor-pointer flex items-center"
+                aria-label="Remove"
               >
-                ×
+                <X size={12} strokeWidth={2.5} />
               </button>
             </>
           ) : (

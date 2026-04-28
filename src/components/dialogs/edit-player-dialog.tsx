@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useStore } from "@/lib/store";
 import {
   GENDER_LABEL,
@@ -66,10 +67,14 @@ export function EditPlayerDialog({
             setError("Another player has the same name + level + gender.");
             return;
           }
+          const prev = useStore.getState().session;
           updatePlayer(player.id, {
             name: name.trim(),
             gender,
             level,
+          });
+          toast(`${name.trim()} updated`, {
+            action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
           });
           onClose();
         }}

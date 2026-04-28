@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { X } from "lucide-react";
 
 export function Dialog({
   open,
@@ -55,9 +56,9 @@ export function Dialog({
           <button
             onClick={onClose}
             aria-label="Close"
-            className="font-mono text-[10px] uppercase tracking-[0.24em] text-bone-3 hover:text-bone cursor-pointer"
+            className="text-bone-3 hover:text-bone cursor-pointer flex items-center"
           >
-            ESC
+            <X size={18} strokeWidth={2} />
           </button>
         </div>
       </div>

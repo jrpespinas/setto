@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useStore } from "@/lib/store";
 import { GENDER_LABEL, LEVELS, LEVEL_FULL_LABEL, type Gender, type Level } from "@/lib/types";
 import { Dialog } from "@/components/ui/dialog";
@@ -51,11 +52,15 @@ export function AddPlayerDialog({
         onSubmit={(e) => {
           e.preventDefault();
           if (!name.trim()) return;
+          const prev = useStore.getState().session;
           const ok = addPlayer({ name, gender, level, paid });
           if (!ok) {
             setError("Duplicate — same name, gender, and level exists.");
             return;
           }
+          toast(`${name.trim()} added`, {
+            action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
+          });
           reset();
           onClose();
         }}

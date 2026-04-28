@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, type DragEvent } from "react";
+import { ArrowLeftRight, Mars, Venus, X } from "lucide-react";
+import { toast } from "sonner";
 import { useStore } from "@/lib/store";
 import {
   LEVEL_LABEL,
@@ -153,7 +155,14 @@ export function CourtCard({
                 <Button
                   size="sm"
                   variant="neon"
-                  onClick={() => { finishMatch(court.id, "none"); setConfirming(false); }}
+                  onClick={() => {
+                    const prev = useStore.getState().session;
+                    finishMatch(court.id, "none");
+                    setConfirming(false);
+                    toast(`Court ${String(court.number).padStart(2, "0")} match finished`, {
+                      action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
+                    });
+                  }}
                 >
                   Confirm
                 </Button>
@@ -209,7 +218,13 @@ export function CourtCard({
       <ConfirmDeleteCourtDialog
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
-        onConfirm={() => removeCourt(court.id)}
+        onConfirm={() => {
+          const prev = useStore.getState().session;
+          removeCourt(court.id);
+          toast(`Court ${String(court.number).padStart(2, "0")} deleted`, {
+            action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
+          });
+        }}
         courtNumber={court.number}
         isOngoing={ongoing}
       />
@@ -290,9 +305,10 @@ function Slot({
         className="h-full border-[0.5px] border-black/10 bg-[#f0f2f5] flex items-center justify-between px-2.5 cursor-grab active:cursor-grabbing active:opacity-70 transition-opacity"
       >
         <div className="min-w-0 flex-1 flex items-center gap-1.5">
-          <span className={`shrink-0 font-bold text-[11px] leading-none ${player.gender === "male" ? "g-male" : "g-female"}`} aria-hidden>
-            {player.gender === "male" ? "♂" : "♀"}
-          </span>
+          {player.gender === "male"
+            ? <Mars size={12} className="g-male shrink-0" strokeWidth={2} aria-hidden />
+            : <Venus size={12} className="g-female shrink-0" strokeWidth={2} aria-hidden />
+          }
           <span className="font-display font-semibold text-[13px] leading-tight text-[#0e1018] truncate">
             {player.name}
           </span>
@@ -305,16 +321,16 @@ function Slot({
             onClick={onSwap}
             aria-label="Switch sides"
             title="Switch sides"
-            className="font-mono text-[11px] text-[#0e1018]/35 hover:text-[#0e1018] cursor-pointer px-1"
+            className="text-[#0e1018]/35 hover:text-[#0e1018] cursor-pointer px-1 flex items-center"
           >
-            ⇄
+            <ArrowLeftRight size={13} strokeWidth={2.5} />
           </button>
           <button
             onClick={onRelease}
             aria-label={`Remove ${player.name}`}
-            className="font-mono text-[11px] text-[#0e1018]/40 hover:text-[#0e1018] cursor-pointer px-1"
+            className="text-[#0e1018]/40 hover:text-[#0e1018] cursor-pointer px-1 flex items-center"
           >
-            ×
+            <X size={13} strokeWidth={2.5} />
           </button>
         </div>
       </div>

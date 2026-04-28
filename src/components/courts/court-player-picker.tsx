@@ -89,12 +89,16 @@ export function CourtPlayerPicker({
   const handleNext = () => {
     const top = session.players
       .filter((p) => p.status === "idle" || p.status === "waiting")
-      .sort(
-        (a, b) =>
+      .sort((a, b) => {
+        // Queue (waiting) players always come before idle
+        if (a.status === "waiting" && b.status !== "waiting") return -1;
+        if (b.status === "waiting" && a.status !== "waiting") return 1;
+        return (
           (a.gamesPlayed ?? 0) - (b.gamesPlayed ?? 0) ||
           a.statusSince - b.statusSince ||
-          a.arrivedAt - b.arrivedAt,
-      )
+          a.arrivedAt - b.arrivedAt
+        );
+      })
       .slice(0, courtSize);
 
     const newA: (string | null)[] = Array(half).fill(null);
@@ -221,7 +225,7 @@ export function CourtPlayerPicker({
               disabled={!canConfirm}
               onClick={handleConfirm}
             >
-              Confirm
+              Start match
             </Button>
           </div>
         </div>

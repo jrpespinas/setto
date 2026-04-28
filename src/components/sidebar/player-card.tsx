@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type DragEvent } from "react";
 import { Mars, Venus, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
+import { ConfirmDialog } from "@/components/dialogs/confirm-dialog";
 import { LEVEL_LABEL, type Player, type PlayerStatus } from "@/lib/types";
 import { Chip } from "@/components/ui/chip";
 import { formatShortDuration } from "@/lib/format";
@@ -40,7 +41,7 @@ export function PlayerCard({
 }) {
   const { setStatus, togglePaid, removePlayer } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"done" | "remove" | null>(null);
+  const [confirmMode, setConfirmMode] = useState<"done" | "remove" | null>(null);
   const cogRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
@@ -64,7 +65,6 @@ export function PlayerCard({
         cogRef.current  && !cogRef.current.contains(target)
       ) {
         setMenuOpen(false);
-        setPendingAction(null);
       }
     };
     document.addEventListener("mousedown", onDown);
@@ -76,7 +76,6 @@ export function PlayerCard({
       const rect = cogRef.current.getBoundingClientRect();
       setMenuPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
     }
-    setPendingAction(null);
     setMenuOpen((v) => !v);
   };
 
@@ -196,22 +195,7 @@ export function PlayerCard({
             </MenuItem>
           )}
           {!isDone && (
-            pendingAction === "done" ? (
-              <ConfirmRow
-                label="Mark as done?"
-                onYes={() => {
-                  const prev = useStore.getState().session;
-                  setStatus(player.id, "done");
-                  setMenuOpen(false);
-                  toast(`${player.name} marked done`, {
-                    action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
-                  });
-                }}
-                onNo={() => setPendingAction(null)}
-              />
-            ) : (
-              <MenuItem onClick={() => setPendingAction("done")}>→ Set Done</MenuItem>
-            )
+            <MenuItem onClick={() => { setConfirmMode("done"); setMenuOpen(false); }}>→ Set Done</MenuItem>
           )}
 
           <MenuDivider />
@@ -229,30 +213,45 @@ export function PlayerCard({
 
           <MenuDivider />
 
-          {pendingAction === "remove" ? (
-            <ConfirmRow
-              label="Remove player?"
-              danger
-              onYes={() => {
-                const prev = useStore.getState().session;
-                removePlayer(player.id);
-                setMenuOpen(false);
-                toast(`${player.name} removed`, {
-                  action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
-                });
-              }}
-              onNo={() => setPendingAction(null)}
-            />
-          ) : (
-            <MenuItem
-              onClick={() => setPendingAction("remove")}
-              className="text-alert hover:text-alert"
-            >
-              Remove
-            </MenuItem>
-          )}
+          <MenuItem
+            onClick={() => { setConfirmMode("remove"); setMenuOpen(false); }}
+            className="text-alert hover:text-alert"
+          >
+            Remove
+          </MenuItem>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmMode === "done"}
+        onClose={() => setConfirmMode(null)}
+        onConfirm={() => {
+          const prev = useStore.getState().session;
+          setStatus(player.id, "done");
+          toast(`${player.name} marked done`, {
+            action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
+          });
+        }}
+        title="Mark as done?"
+        description={`${player.name} will be moved to the Done section and removed from rotation.`}
+        confirmLabel="Mark done"
+      />
+
+      <ConfirmDialog
+        open={confirmMode === "remove"}
+        onClose={() => setConfirmMode(null)}
+        onConfirm={() => {
+          const prev = useStore.getState().session;
+          removePlayer(player.id);
+          toast(`${player.name} removed`, {
+            action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
+          });
+        }}
+        title="Remove player?"
+        description={`${player.name} will be permanently removed from this session.`}
+        confirmLabel="Remove"
+        danger
+      />
     </li>
   );
 }
@@ -280,34 +279,3 @@ function MenuDivider() {
   return <div className="border-t-[0.5px] border-hairline-2 my-1" />;
 }
 
-function ConfirmRow({
-  label,
-  danger = false,
-  onYes,
-  onNo,
-}: {
-  label: string;
-  danger?: boolean;
-  onYes: () => void;
-  onNo: () => void;
-}) {
-  return (
-    <div className="flex items-center gap-1 px-3 py-1.5">
-      <span className={`font-mono text-[9px] uppercase tracking-[0.16em] flex-1 ${danger ? "text-alert" : "text-bone"}`}>
-        {label}
-      </span>
-      <button
-        onClick={onYes}
-        className={`font-mono text-[9px] uppercase tracking-[0.16em] cursor-pointer hover:opacity-70 ${danger ? "text-alert" : "text-neon"}`}
-      >
-        Yes
-      </button>
-      <button
-        onClick={onNo}
-        className="font-mono text-[9px] uppercase tracking-[0.16em] text-bone-4 hover:text-bone cursor-pointer ml-1"
-      >
-        No
-      </button>
-    </div>
-  );
-}

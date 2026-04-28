@@ -51,6 +51,7 @@ export type Session = {
   queue: QueueCard[];
   players: Player[];
   matchesCompleted: number;
+  startedAt?: number;
 };
 
 export const LEVELS: Level[] = [

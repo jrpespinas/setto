@@ -33,50 +33,55 @@ export function MetricBar() {
       ? waiters.reduce((sum, p) => sum + p.statusSince, 0) / waiters.length
       : 0;
 
-    const ongoingIds  = new Set(ongoing.map((c) => c.id));
-    const vacantSorted = session.courts
-      .filter((c) => !ongoingIds.has(c.id))
-      .sort((a, b) => a.number - b.number);
-    const activeSorted = [...ongoing].sort(
-      (a, b) => (a.matchStartedAt ?? Infinity) - (b.matchStartedAt ?? Infinity),
-    );
-    const nextFreeCourt = vacantSorted[0] ?? activeSorted[0] ?? session.courts[0];
+    const longestWaiter = waiters.length > 0
+      ? waiters.reduce((oldest, p) => p.statusSince < oldest.statusSince ? p : oldest)
+      : null;
 
     return {
-      active:        ongoing.length,
-      total:         session.courts.length,
+      active:            ongoing.length,
+      total:             session.courts.length,
       waiters,
       avgStatusSince,
-      unpaid:        unpaid.length,
-      nextFreeCourt,
+      onBreak:           selectors.breakList(session).length,
+      unpaid:            unpaid.length,
+      matchesCompleted:  session.matchesCompleted,
+      longestWaiter,
     };
   }, [session]);
 
   const avgWaitMs    = m.avgStatusSince > 0 ? tick - m.avgStatusSince : 0;
-  const GAME_MS      = 13 * 60 * 1000;
-  const tolerance    = GAME_MS / Math.max(1, m.active);
   const activeAccent = m.active > 0 ? "neon" : "mute" as const;
-  const nextFreeElapsed = m.nextFreeCourt?.matchStartedAt
-    ? tick - m.nextFreeCourt.matchStartedAt
-    : null;
 
   return (
     <div className="shrink-0 hidden md:block">
       <div className="flex items-stretch">
 
         {/* ── COURTS ── */}
-        <Cluster title="Courts" highlight>
+        <Cluster title="Courts" highlight gap="gap-8">
           <CourtsRatio active={m.active} total={m.total} accent={activeAccent} />
-          <NextFreeCourtStat court={m.nextFreeCourt} elapsed={nextFreeElapsed} />
+          <Stat
+            label="Matches"
+            value={m.matchesCompleted}
+            accent={m.matchesCompleted > 0 ? "default" : "mute"}
+          />
         </Cluster>
 
-        {/* ── PLAYERS — unified dot-matrix chart ── */}
-        <Cluster title="Players" flex="flex-[1.4]" stretch>
-          <UnifiedWaitChart
-            waiters={m.waiters}
-            tick={tick}
+        {/* ── PLAYERS ── */}
+        <Cluster title="Players" flex="flex-[1.4]" gap="gap-8">
+          <Stat
+            label="Waiting"
+            value={m.waiters.length}
+            accent={m.waiters.length > 0 ? "default" : "mute"}
+          />
+          <Stat
+            label="On Break"
+            value={m.onBreak}
+            accent={m.onBreak > 0 ? "default" : "mute"}
+          />
+          <AvgWaitStat
             avgWaitMs={avgWaitMs}
-            tolerance={tolerance}
+            longestWaiter={m.longestWaiter}
+            tick={tick}
           />
         </Cluster>
 
@@ -105,7 +110,6 @@ function Cluster({
   gap = "gap-12",
   flex = "flex-1",
   highlight,
-  stretch,
   last,
 }: {
   title: string;
@@ -113,7 +117,6 @@ function Cluster({
   gap?: string;
   flex?: string;
   highlight?: boolean;
-  stretch?: boolean;
   last?: boolean;
 }) {
   return (
@@ -121,10 +124,7 @@ function Cluster({
       <div className={`font-mono text-[9px] uppercase tracking-[0.28em] ${highlight ? "text-bone-3" : "text-bone-4"} mb-2.5`}>
         {title}
       </div>
-      <div className={stretch
-        ? "flex-1 flex items-center w-full"
-        : `flex items-center justify-center ${gap}`
-      }>
+      <div className={`flex items-center justify-center ${gap}`}>
         {children}
       </div>
     </div>
@@ -175,148 +175,38 @@ function CourtsRatio({ active, total, accent }: { active: number; total: number;
   );
 }
 
-function NextFreeCourtStat({ court, elapsed }: {
-  court?: { number: number };
-  elapsed: number | null;
-}) {
-  return (
-    <div className="flex flex-col items-center text-center">
-      <div className={`font-mono text-[9px] uppercase tracking-[0.2em] text-bone-4 mb-0.5`}>
-        {court ? "Court" : ""}
-      </div>
-      <div className={`${NUM} ${court ? "text-bone" : "text-bone-3"}`}>
-        {court ? String(court.number).padStart(2, "0") : "--"}
-      </div>
-      {elapsed !== null && (
-        <div className="font-mono text-[11px] text-bone-3 mt-0.5 tracking-[0.08em]">
-          {formatShortDuration(elapsed)}
-        </div>
-      )}
-      <div className={`${LBL} mt-2`}>Next Free</div>
-    </div>
-  );
+function formatAvgWait(ms: number): string {
+  if (ms <= 0) return "—";
+  const totalSec = Math.floor(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const m = Math.floor(totalSec / 60);
+  const s = String(totalSec % 60).padStart(2, "0");
+  return `${m}:${s}`;
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Unified Wait Chart — Nothing-inspired dot matrix
-   ─ Columns sorted ascending: shortest wait left → longest right
-   ─ Ghost dots (top) + filled dots (bottom) per column
-   ─ Outlier name · time always visible above rightmost column
-   ─ Hover reveals name · time for all other columns (desktop)
-   ─ "N Waiting" left-aligned below as chart legend
-───────────────────────────────────────────────────────────── */
-
-const MAX_ROWS = 6;
-const DOT_PX   = 5;   // dot diameter in px
-const GAP_PX   = 2;   // vertical gap between dots
-const CHART_H  = MAX_ROWS * (DOT_PX + GAP_PX) - GAP_PX; // 40px
-
-function UnifiedWaitChart({ waiters, tick, avgWaitMs, tolerance }: {
-  waiters: Array<{ name: string; statusSince: number }>;
-  tick: number;
+function AvgWaitStat({ avgWaitMs, longestWaiter, tick }: {
   avgWaitMs: number;
-  tolerance: number;
+  longestWaiter: { name: string; statusSince: number } | null;
+  tick: number;
 }) {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
-  const sorted = [...waiters]
-    .map((p) => ({ name: p.name, ms: tick - p.statusSince }))
-    .sort((a, b) => a.ms - b.ms);
-
-  const count = sorted.length;
-  const maxMs = count > 0 ? sorted[count - 1].ms : 1;
-
-  const getDotFill = (ms: number): string => {
-    const dev = avgWaitMs > 0 ? ms - avgWaitMs : ms;
-    if (dev > tolerance * 2) return "var(--alert)";
-    if (dev > tolerance)     return "var(--warm)";
-    return "var(--bone-3)";
-  };
-
-  const outlier     = count > 0 ? sorted[count - 1] : null;
-  const outlierDev  = outlier ? (avgWaitMs > 0 ? outlier.ms - avgWaitMs : outlier.ms) : 0;
-  const outlierColor = outlierDev > tolerance * 2 ? "var(--alert)"
-    : outlierDev > tolerance ? "var(--warm)"
-    : "var(--bone-3)";
+  const AMBER_MS = 8 * 60 * 1000;
+  const RED_MS   = 15 * 60 * 1000;
+  const accent: Accent =
+    avgWaitMs >= RED_MS   ? "alert" :
+    avgWaitMs >= AMBER_MS ? "warm"  :
+    avgWaitMs > 0         ? "default" : "mute";
 
   return (
-    <div className="w-full flex flex-col" onMouseLeave={() => setHoveredIdx(null)}>
-
-      {/* Outlier label — fixed height, right-aligned above rightmost column */}
-      <div className="relative h-5 mb-2 flex items-end">
-        {outlier && (
-          <div className="absolute right-0 flex items-baseline gap-1.5" style={{ color: outlierColor }}>
-            <span className="font-display font-semibold text-[13px] leading-none">
-              {outlier.name}
-            </span>
-            <span className="font-mono text-[9px] tracking-[0.08em] opacity-80">
-              {formatShortDuration(outlier.ms)}
-            </span>
-          </div>
-        )}
+    <div className="flex flex-col items-center text-center">
+      <div className={`${NUM} ${accentColor(accent)}`}>
+        {formatAvgWait(avgWaitMs)}
       </div>
-
-      {/* Dot matrix columns */}
-      <div
-        className="relative flex gap-[3px] w-full"
-        style={{ height: `${CHART_H}px` }}
-      >
-        {count === 0 ? (
-          <span className="font-mono text-[11px]" style={{ color: "var(--bone-4)" }}>—</span>
-        ) : (
-          sorted.map((player, i) => {
-            const filledDots = Math.max(1, Math.round((player.ms / maxMs) * MAX_ROWS));
-            const isOutlier  = i === count - 1;
-            const dotFill    = getDotFill(player.ms);
-
-            return (
-              <div
-                key={i}
-                className="relative flex-1 flex flex-col gap-[2px] items-center cursor-default"
-                style={{ height: `${CHART_H}px` }}
-                onMouseEnter={() => setHoveredIdx(i)}
-              >
-                {Array.from({ length: MAX_ROWS }).map((_, row) => {
-                  // Rows near the bottom (high index) are filled
-                  const filled = row >= MAX_ROWS - filledDots;
-                  return (
-                    <div
-                      key={row}
-                      style={{
-                        width:           `${DOT_PX}px`,
-                        height:          `${DOT_PX}px`,
-                        borderRadius:    "50%",
-                        flexShrink:       0,
-                        backgroundColor: filled ? dotFill : "var(--hairline-2)",
-                        transition:      "background-color 0.3s ease",
-                      }}
-                    />
-                  );
-                })}
-
-                {/* Hover tooltip — non-outlier columns, desktop only */}
-                {hoveredIdx === i && !isOutlier && (
-                  <div
-                    className="absolute bottom-full mb-2 z-50 px-2 py-1
-                               bg-ink-200 border-[0.5px] border-hairline-2
-                               font-mono text-[9px] text-bone whitespace-nowrap
-                               pointer-events-none"
-                    style={{ left: "50%", transform: "translateX(-50%)" }}
-                  >
-                    {player.name} · {formatShortDuration(player.ms)}
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      {/* N Waiting — left-aligned legend */}
-      <div className={`${LBL} mt-2`}>
-        {count} Waiting
-      </div>
-
+      {longestWaiter && (
+        <div className="font-mono text-[9px] tracking-[0.08em] text-bone-4 mt-0.5 max-w-[120px] truncate">
+          {longestWaiter.name} · {formatShortDuration(tick - longestWaiter.statusSince)}
+        </div>
+      )}
+      <div className={`${LBL} mt-2`}>Avg Wait</div>
     </div>
   );
 }

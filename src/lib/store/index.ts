@@ -30,11 +30,7 @@ function identityKey(d: { name: string; gender: Gender; level: Level }) {
 
 function seed(): Session {
   return {
-    courts: [
-      { id: uid(), number: 1, size: 4, slots: [null, null, null, null] },
-      { id: uid(), number: 2, size: 4, slots: [null, null, null, null] },
-      { id: uid(), number: 3, size: 4, slots: [null, null, null, null] },
-    ],
+    courts: [],
     queue: Array.from({ length: QUEUE_SLOTS }, () => ({
       id: uid(),
       size: 4 as CourtSize,
@@ -42,6 +38,7 @@ function seed(): Session {
     })),
     players: [],
     matchesCompleted: 0,
+    startedAt: now(),
   };
 }
 
@@ -75,8 +72,8 @@ function occupiedInQueue(queue: QueueCard[]): Set<string> {
 }
 
 type Actions = {
-  addCourt: (size: CourtSize) => void;
-  updateCourt: (id: string, patch: Partial<Pick<Court, "size" | "number">>) => void;
+  addCourt: (size: CourtSize, number?: number) => boolean;
+  updateCourt: (id: string, patch: Partial<Pick<Court, "size" | "number">>) => boolean;
   removeCourt: (id: string) => void;
 
   addPlayer: (data: {
@@ -120,25 +117,27 @@ export const useStore = create<SettoStore>()(
       hydrated: false,
       setHydrated: (v) => set({ hydrated: v }),
 
-      addCourt(size) {
+      addCourt(size, number) {
+        const { session } = get();
+        const nextNumber = number ?? (session.courts.reduce((m, c) => Math.max(m, c.number), 0) + 1);
+        if (session.courts.some((c) => c.number === nextNumber)) return false;
         set(({ session }) => ({
           session: {
             ...session,
             courts: [
               ...session.courts,
-              {
-                id: uid(),
-                number:
-                  session.courts.reduce((m, c) => Math.max(m, c.number), 0) + 1,
-                size,
-                slots: Array(size).fill(null),
-              },
+              { id: uid(), number: nextNumber, size, slots: Array(size).fill(null) },
             ],
           },
         }));
+        return true;
       },
 
       updateCourt(id, patch) {
+        const { session } = get();
+        if (patch.number !== undefined && session.courts.some((c) => c.id !== id && c.number === patch.number)) {
+          return false;
+        }
         set(({ session }) => ({
           session: {
             ...session,
@@ -156,6 +155,7 @@ export const useStore = create<SettoStore>()(
             }),
           },
         }));
+        return true;
       },
 
       removeCourt(id) {
@@ -489,7 +489,7 @@ export const useStore = create<SettoStore>()(
         });
       },
 
-      finishMatch(courtId, winner) {
+      finishMatch(courtId, _winner) {
         set(({ session }) => {
           const court = session.courts.find((c) => c.id === courtId);
           if (!court) return { session };
@@ -513,9 +513,7 @@ export const useStore = create<SettoStore>()(
               ? { ...c, slots: Array(c.size).fill(null), matchStartedAt: undefined }
               : c,
           );
-          const matchesCompleted = winner !== "none"
-            ? (session.matchesCompleted ?? 0) + 1
-            : (session.matchesCompleted ?? 0);
+          const matchesCompleted = (session.matchesCompleted ?? 0) + 1;
           return { session: { ...session, courts, players, matchesCompleted } };
         });
       },

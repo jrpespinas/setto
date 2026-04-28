@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Chip, LiveDot } from "@/components/ui/chip";
 import { EditCourtDialog } from "@/components/dialogs/edit-court-dialog";
 import { ConfirmDeleteCourtDialog } from "@/components/dialogs/confirm-delete-court-dialog";
+import { FinishMatchDialog } from "@/components/dialogs/finish-match-dialog";
 import { CourtPlayerPicker } from "./court-player-picker";
 
 export function CourtCard({
@@ -34,7 +35,7 @@ export function CourtCard({
 
   const [edit, setEdit]                   = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [confirming, setConfirming]       = useState(false);
+  const [finishOpen, setFinishOpen]       = useState(false);
   const [pickerOpen, setPickerOpen]       = useState(false);
   const [queueOver, setQueueOver]         = useState(false);
   const [tick, setTick]                   = useState(() => Date.now());
@@ -45,16 +46,22 @@ export function CourtCard({
     return () => window.clearInterval(id);
   }, [court.matchStartedAt]);
 
-  const half      = court.size / 2;
-  const teamA     = court.slots.slice(0, half);
-  const teamB     = court.slots.slice(half);
-  const status    = courtStatus(court, playersById);
-  const ongoing   = status === "ongoing";
-  const isVacant  = court.slots.every((s) => !s);
+  const half    = court.size / 2;
+  const teamA   = court.slots.slice(0, half);
+  const teamB   = court.slots.slice(half);
+  const status  = courtStatus(court, playersById);
+  const ongoing = status === "ongoing";
 
-  const filledA   = teamA.filter((id) => id && playersById[id]).length;
-  const filledB   = teamB.filter((id) => id && playersById[id]).length;
-  const canFinish = filledA > 0 && filledA === filledB;
+  const teamANames = teamA.filter((id): id is string => !!id && !!playersById[id]).map((id) => playersById[id].name);
+  const teamBNames = teamB.filter((id): id is string => !!id && !!playersById[id]).map((id) => playersById[id].name);
+
+  const handleFinish = (winner: "A" | "B" | "none") => {
+    const prev = useStore.getState().session;
+    finishMatch(court.id, winner);
+    toast(`Court ${String(court.number).padStart(2, "0")} match finished`, {
+      action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
+    });
+  };
 
   return (
     <>
@@ -143,63 +150,45 @@ export function CourtCard({
         </div>
 
         {/* footer ---------------------------------------------------- */}
-        {confirming ? (
-            <footer className="flex items-center justify-between px-3 py-2 rule-top bg-neon-ghost">
-              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone-2">
-                End this match?
-              </span>
-              <div className="flex items-center gap-1.5">
-                <Button size="xs" variant="ghost" onClick={() => setConfirming(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  variant="neon"
-                  onClick={() => {
-                    const prev = useStore.getState().session;
-                    finishMatch(court.id, "none");
-                    setConfirming(false);
-                    toast(`Court ${String(court.number).padStart(2, "0")} match finished`, {
-                      action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
-                    });
-                  }}
-                >
-                  Confirm
-                </Button>
-              </div>
-            </footer>
+        <footer className="flex items-center justify-between px-3 py-2 rule-top">
+          <div className="flex gap-0.5">
+            <Button
+              size="xs"
+              variant="ghost"
+              disabled={ongoing}
+              title={ongoing ? "Finish the match to edit" : undefined}
+              onClick={() => setEdit(true)}
+            >
+              Edit
+            </Button>
+            <Button
+              size="xs"
+              variant="ghost"
+              className="hover:text-alert"
+              onClick={() => setConfirmDelete(true)}
+            >
+              Delete
+            </Button>
+          </div>
+          {ongoing ? (
+            <Button size="sm" variant="neon" onClick={() => setFinishOpen(true)}>
+              Finish match
+            </Button>
           ) : (
-            <footer className="flex items-center justify-between px-3 py-2 rule-top">
-              <div className="flex gap-0.5">
-                <Button size="xs" variant="ghost" onClick={() => setEdit(true)}>Edit</Button>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  className="hover:text-alert"
-                  onClick={() => setConfirmDelete(true)}
-                >
-                  Delete
-                </Button>
-              </div>
-              {isVacant ? (
-                <Button size="sm" variant="solid" onClick={() => setPickerOpen(true)}>
-                  + Add players
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  variant={canFinish ? "neon" : "outline"}
-                  disabled={!canFinish}
-                  onClick={() => setConfirming(true)}
-                >
-                  Finish match
-                </Button>
-              )}
-            </footer>
-          )
-        }
+            <Button size="sm" variant="solid" onClick={() => setPickerOpen(true)}>
+              + Add players
+            </Button>
+          )}
+        </footer>
       </article>
 
+      <FinishMatchDialog
+        open={finishOpen}
+        onClose={() => setFinishOpen(false)}
+        onFinish={handleFinish}
+        teamANames={teamANames}
+        teamBNames={teamBNames}
+      />
       <CourtPlayerPicker
         open={pickerOpen}
         courtId={court.id}

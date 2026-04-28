@@ -10,6 +10,7 @@ import { CourtGrid } from "@/components/courts/court-grid";
 import { PlayerSidebar } from "@/components/sidebar/player-sidebar";
 import { QueueRail } from "@/components/queue/queue-rail";
 import { AddCourtDialog } from "@/components/dialogs/add-court-dialog";
+import { ConfirmDialog } from "@/components/dialogs/confirm-dialog";
 import { ServiceWorkerRegister } from "./sw-register";
 
 /** Root application shell.
@@ -19,21 +20,15 @@ export function Shell() {
   const hydrated = useStore((s) => s.hydrated);
   const resetAll = useStore((s) => s.resetAll);
   const [addCourt, setAddCourt] = useState(false);
-  const [confirmReset, setConfirmReset] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
   const [sessionStamp, setSessionStamp] = useState("");
 
-  const handleReset = () => {
-    if (confirmReset) {
-      const prev = useStore.getState().session;
-      resetAll();
-      setConfirmReset(false);
-      toast("Session cleared", {
-        action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
-      });
-    } else {
-      setConfirmReset(true);
-      window.setTimeout(() => setConfirmReset(false), 3000);
-    }
+  const handleClearConfirm = () => {
+    const prev = useStore.getState().session;
+    resetAll();
+    toast("Session cleared", {
+      action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
+    });
   };
 
   useEffect(() => {
@@ -90,8 +85,8 @@ export function Shell() {
                 <span className="font-mono text-[9px] uppercase tracking-[0.28em] text-bone-4">
                   {hydrated ? "· live" : "· syncing"}
                 </span>
-                <Button variant="danger" size="sm" onClick={handleReset}>
-                  {confirmReset ? "Confirm?" : "Clear Session"}
+                <Button variant="danger" size="sm" onClick={() => setClearOpen(true)}>
+                  Clear Session
                 </Button>
                 <Button variant="solid" size="sm" onClick={() => setAddCourt(true)}>
                   + Court
@@ -103,9 +98,9 @@ export function Shell() {
           {/* Metric bar */}
           <MetricBar />
 
-          {/* Floor — courts + queue rail */}
-          <section className="flex-1 min-h-0 grid xl:grid-cols-[minmax(0,1fr)_260px]">
-            <div className="flex-1 min-h-0 overflow-y-auto p-5 md:p-7 xl:p-8">
+          {/* Floor — bento grid */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-5 md:p-7 xl:p-8">
+            <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_272px] xl:gap-5 xl:items-start">
               {!hydrated ? (
                 <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone-4">
                   Loading session…
@@ -113,11 +108,11 @@ export function Shell() {
               ) : (
                 <CourtGrid onAddCourt={() => setAddCourt(true)} />
               )}
+              <div className="hidden xl:block">
+                <QueueRail />
+              </div>
             </div>
-            <div className="hidden xl:block xl:h-full xl:overflow-hidden">
-              <QueueRail />
-            </div>
-          </section>
+          </div>
 
           {/* Footer */}
           <footer className="shrink-0 rule-top px-6 md:px-8 py-3 flex items-center justify-between">
@@ -132,6 +127,15 @@ export function Shell() {
       </div>
 
       <AddCourtDialog open={addCourt} onClose={() => setAddCourt(false)} />
+      <ConfirmDialog
+        open={clearOpen}
+        onClose={() => setClearOpen(false)}
+        onConfirm={handleClearConfirm}
+        title="Clear session?"
+        description="All courts, players, and match history will be wiped. This cannot be undone (but you can Undo from the toast)."
+        confirmLabel="Clear session"
+        danger
+      />
     </>
   );
 }

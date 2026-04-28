@@ -4,6 +4,7 @@ import { useMemo, useState, type DragEvent } from "react";
 import { useStore, selectors } from "@/lib/store";
 import { LEVEL_LABEL, type Player, type QueueCard } from "@/lib/types";
 import { Chip, LiveDot } from "@/components/ui/chip";
+import { ConfirmDialog } from "@/components/dialogs/confirm-dialog";
 
 /** 3-slot queue rail — "prototype matches" feeding the courts.
  * Ghost-bordered, ready-pulses when filled to a valid size. */
@@ -13,14 +14,14 @@ export function QueueRail() {
   const queue = session.queue;
 
   return (
-    <aside className="relative flex flex-col bg-ink-050 rule-left">
-      <header className="shrink-0 px-4 pt-4 pb-3 rule-bottom">
-        <h2 className="statement text-[26px] leading-none">Match Queue</h2>
+    <aside className="flex flex-col bg-ink-100 border-[0.5px] border-hairline-2">
+      <header className="px-4 pt-4 pb-3 rule-bottom">
+        <h2 className="statement text-[22px] leading-none">Match Queue</h2>
         <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone-4 mt-2">
           {queue.filter((q) => q.slots.some(Boolean)).length} / 3 matches ready
         </p>
       </header>
-      <ul className="flex-1 min-h-0 overflow-y-auto">
+      <ul>
         {queue.map((q, i) => (
           <QueueCardRow
             key={q.id}
@@ -48,6 +49,8 @@ function QueueCardRow({
   const releaseQueueSlot = useStore((s) => s.releaseQueueSlot);
   const dumpQueueToIdle = useStore((s) => s.dumpQueueToIdle);
 
+  const [clearOpen, setClearOpen] = useState(false);
+
   const filled = card.slots.filter(Boolean).length;
   const half = card.slots.length / 2;
   const teamA = card.slots.slice(0, half);
@@ -72,63 +75,75 @@ function QueueCardRow({
   };
 
   return (
-    <li
-      draggable={isDraggable}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      className={`
-        relative rule-bottom px-4 py-3.5
-        ${isDraggable ? "cursor-grab active:cursor-grabbing" : ""}
-        ${isReady ? "bg-neon-ghost" : ""}
-      `}
-    >
-      <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2">
-          {isDraggable && (
-            <span className="text-bone-4 text-[13px] leading-none select-none" title="Drag to a court" aria-hidden>
-              ⠿
+    <>
+      <li
+        draggable={isDraggable}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        className={`
+          relative rule-bottom last:border-b-0 px-4 py-3.5
+          ${isDraggable ? "cursor-grab active:cursor-grabbing" : ""}
+          ${isReady ? "bg-neon-ghost" : ""}
+        `}
+      >
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-2">
+            {isDraggable && (
+              <span className="text-bone-4 text-[13px] leading-none select-none" title="Drag to a court" aria-hidden>
+                ⠿
+              </span>
+            )}
+            <span className="font-mono digit text-[9px] text-bone-4 tracking-[0.14em]">
+              Q·{index}
             </span>
-          )}
-          <span className="font-mono digit text-[9px] text-bone-4 tracking-[0.14em]">
-            Q·{index}
-          </span>
-          <Chip tone={isReady ? "neon" : "muted"}>
-            {isReady ? <LiveDot className="bg-ink-000" /> : null}
-            {isReady ? "Ready" : `${filled}/${card.slots.length}`}
-          </Chip>
+            <Chip tone={isReady ? "neon" : "muted"}>
+              {isReady ? <LiveDot className="bg-ink-000" /> : null}
+              {isReady ? "Ready" : `${filled}/${card.slots.length}`}
+            </Chip>
+          </div>
+          {filled > 0 ? (
+            <button
+              onClick={() => setClearOpen(true)}
+              className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone-4 hover:text-alert cursor-pointer"
+            >
+              Clear
+            </button>
+          ) : null}
         </div>
-        {filled > 0 ? (
-          <button
-            onClick={() => dumpQueueToIdle(card.id)}
-            className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone-4 hover:text-alert cursor-pointer"
-          >
-            Clear
-          </button>
-        ) : null}
-      </div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-stretch">
-        <TeamSide
-          slots={teamA}
-          offset={0}
-          queueId={card.id}
-          playersById={playersById}
-          onAssign={assignToQueueSlot}
-          onRelease={releaseQueueSlot}
-        />
-        <div className="flex items-center font-display italic text-bone-4 text-[11px]">
-          vs
+        <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-stretch">
+          <TeamSide
+            slots={teamA}
+            offset={0}
+            queueId={card.id}
+            playersById={playersById}
+            onAssign={assignToQueueSlot}
+            onRelease={releaseQueueSlot}
+          />
+          <div className="flex items-center font-display italic text-bone-4 text-[11px]">
+            vs
+          </div>
+          <TeamSide
+            slots={teamB}
+            offset={half}
+            queueId={card.id}
+            playersById={playersById}
+            onAssign={assignToQueueSlot}
+            onRelease={releaseQueueSlot}
+          />
         </div>
-        <TeamSide
-          slots={teamB}
-          offset={half}
-          queueId={card.id}
-          playersById={playersById}
-          onAssign={assignToQueueSlot}
-          onRelease={releaseQueueSlot}
-        />
-      </div>
-    </li>
+      </li>
+
+      <ConfirmDialog
+        open={clearOpen}
+        onClose={() => setClearOpen(false)}
+        onConfirm={() => dumpQueueToIdle(card.id)}
+        title="Clear queue slot?"
+        description="All players in this queue slot will be returned to idle."
+        confirmLabel="Clear"
+        danger
+      />
+    </>
   );
 }
 

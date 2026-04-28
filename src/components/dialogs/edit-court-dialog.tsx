@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
 import type { CourtSize } from "@/lib/types";
@@ -23,7 +23,15 @@ export function EditCourtDialog({
 }) {
   const updateCourt = useStore((s) => s.updateCourt);
   const [size, setSize] = useState<CourtSize>(currentSize);
-  const [number, setNumber] = useState(currentNumber);
+  const [numberStr, setNumberStr] = useState(String(currentNumber));
+  const [error, setError] = useState("");
+
+  const number = Math.max(1, parseInt(numberStr, 10) || 1);
+
+  useEffect(() => {
+    if (open) { setSize(currentSize); setNumberStr(String(currentNumber)); setError(""); }
+  }, [open, currentSize, currentNumber]);
+
   return (
     <Dialog
       open={open}
@@ -34,9 +42,8 @@ export function EditCourtDialog({
       <div className="space-y-5">
         <Field label="Court number">
           <TextInput
-            type="number"
-            value={number}
-            onChange={(v) => setNumber(Math.max(1, Number(v)))}
+            value={numberStr}
+            onChange={(v) => { setNumberStr(v.replace(/\D/g, "")); setError(""); }}
           />
         </Field>
         <Field label="Format">
@@ -45,18 +52,22 @@ export function EditCourtDialog({
             <Toggle active={size === 4} onClick={() => setSize(4)} label="Doubles · 4" />
           </div>
         </Field>
-        {size !== currentSize ? (
+        {size !== currentSize && (
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-alert">
             Changing format clears slots on this court.
           </p>
-        ) : null}
+        )}
+        {error && (
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-alert">{error}</p>
+        )}
         <div className="flex justify-end gap-2 pt-3 border-t-[0.5px] border-hairline-2">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button
             variant="solid"
             onClick={() => {
               const prev = useStore.getState().session;
-              updateCourt(courtId, { size, number });
+              const ok = updateCourt(courtId, { size, number });
+              if (!ok) { setError(`Court ${number} already exists.`); return; }
               toast(`Court ${String(number).padStart(2, "0")} updated`, {
                 action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
               });

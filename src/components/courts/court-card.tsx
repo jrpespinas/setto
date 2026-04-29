@@ -165,6 +165,8 @@ export function CourtCard({
               size="xs"
               variant="ghost"
               className="hover:text-alert"
+              disabled={ongoing}
+              title={ongoing ? "Finish the match to delete" : undefined}
               onClick={() => setConfirmDelete(true)}
             >
               Delete
@@ -176,7 +178,7 @@ export function CourtCard({
             </Button>
           ) : (
             <Button size="sm" variant="solid" onClick={() => setPickerOpen(true)}>
-              + Add players
+              + Set players
             </Button>
           )}
         </footer>

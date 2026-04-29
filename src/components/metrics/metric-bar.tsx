@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useStore, selectors } from "@/lib/store";
-import { formatShortDuration } from "@/lib/format";
 import { Hairline } from "@/components/ui/chip";
 
 /** Metric bar — hidden on phones (<768px). Tablets and up only. */
@@ -33,23 +32,23 @@ export function MetricBar() {
       ? waiters.reduce((sum, p) => sum + p.statusSince, 0) / waiters.length
       : 0;
 
-    const longestWaiter = waiters.length > 0
-      ? waiters.reduce((oldest, p) => p.statusSince < oldest.statusSince ? p : oldest)
-      : null;
+    const avgMatchMs = session.matchesCompleted > 0
+      ? (session.totalMatchDurationMs ?? 0) / session.matchesCompleted
+      : 0;
 
     return {
-      active:            ongoing.length,
-      total:             session.courts.length,
+      active:           ongoing.length,
+      total:            session.courts.length,
       waiters,
       avgStatusSince,
-      onBreak:           selectors.breakList(session).length,
-      unpaid:            unpaid.length,
-      matchesCompleted:  session.matchesCompleted,
-      longestWaiter,
+      avgMatchMs,
+      onBreak:          selectors.breakList(session).length,
+      unpaid:           unpaid.length,
+      matchesCompleted: session.matchesCompleted,
     };
   }, [session]);
 
-  const avgWaitMs    = m.avgStatusSince > 0 ? tick - m.avgStatusSince : 0;
+  const avgWaitMs = m.avgStatusSince > 0 ? tick - m.avgStatusSince : 0;
   const activeAccent = m.active > 0 ? "neon" : "mute" as const;
 
   return (
@@ -57,17 +56,22 @@ export function MetricBar() {
       <div className="flex items-stretch">
 
         {/* ── COURTS ── */}
-        <Cluster title="Courts" highlight gap="gap-8">
+        <Cluster title="Courts" flex="flex-3" highlight gap="gap-8">
           <CourtsRatio active={m.active} total={m.total} accent={activeAccent} />
           <Stat
             label="Matches"
             value={m.matchesCompleted}
             accent={m.matchesCompleted > 0 ? "default" : "mute"}
           />
+          <DurationStat
+            label="Avg Match"
+            durationMs={m.avgMatchMs}
+            accent={m.avgMatchMs > 0 ? "default" : "mute"}
+          />
         </Cluster>
 
         {/* ── PLAYERS ── */}
-        <Cluster title="Players" flex="flex-[1.4]" gap="gap-8">
+        <Cluster title="Players" flex="flex-3" gap="gap-8">
           <Stat
             label="Waiting"
             value={m.waiters.length}
@@ -78,15 +82,11 @@ export function MetricBar() {
             value={m.onBreak}
             accent={m.onBreak > 0 ? "default" : "mute"}
           />
-          <AvgWaitStat
-            avgWaitMs={avgWaitMs}
-            longestWaiter={m.longestWaiter}
-            tick={tick}
-          />
+          <AvgWaitStat avgWaitMs={avgWaitMs} />
         </Cluster>
 
         {/* ── FEES ── */}
-        <Cluster title="Fees" flex="flex-[0.75]" last>
+        <Cluster title="Fees" last>
           <Stat
             label="Unpaid"
             value={m.unpaid}
@@ -184,11 +184,7 @@ function formatAvgWait(ms: number): string {
   return `${m}:${s}`;
 }
 
-function AvgWaitStat({ avgWaitMs, longestWaiter, tick }: {
-  avgWaitMs: number;
-  longestWaiter: { name: string; statusSince: number } | null;
-  tick: number;
-}) {
+function AvgWaitStat({ avgWaitMs }: { avgWaitMs: number }) {
   const AMBER_MS = 8 * 60 * 1000;
   const RED_MS   = 15 * 60 * 1000;
   const accent: Accent =
@@ -198,15 +194,21 @@ function AvgWaitStat({ avgWaitMs, longestWaiter, tick }: {
 
   return (
     <div className="flex flex-col items-center text-center">
-      <div className={`${NUM} ${accentColor(accent)}`}>
-        {formatAvgWait(avgWaitMs)}
-      </div>
-      {longestWaiter && (
-        <div className="font-mono text-[9px] tracking-[0.08em] text-bone-4 mt-0.5 max-w-[120px] truncate">
-          {longestWaiter.name} · {formatShortDuration(tick - longestWaiter.statusSince)}
-        </div>
-      )}
+      <div className={`${NUM} ${accentColor(accent)}`}>{formatAvgWait(avgWaitMs)}</div>
       <div className={`${LBL} mt-2`}>Avg Wait</div>
+    </div>
+  );
+}
+
+function DurationStat({ label, durationMs, accent = "default" }: {
+  label: string;
+  durationMs: number;
+  accent?: Accent;
+}) {
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div className={`${NUM} ${accentColor(accent)}`}>{formatAvgWait(durationMs)}</div>
+      <div className={`${LBL} mt-2`}>{label}</div>
     </div>
   );
 }

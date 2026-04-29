@@ -10,6 +10,7 @@ export function Dialog({
   eyebrow,
   children,
   placement = "center",
+  size = "default",
 }: {
   open: boolean;
   onClose: () => void;
@@ -17,6 +18,7 @@ export function Dialog({
   eyebrow?: string;
   children: ReactNode;
   placement?: "center" | "top-right";
+  size?: "default" | "wide";
 }) {
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -42,10 +44,10 @@ export function Dialog({
         if (e.target === ref.current) onClose();
       }}
       data-placement={placement === "top-right" ? "top-right" : undefined}
-      className="bg-ink-100 text-bone p-0 max-w-[min(540px,92vw)] w-full
-                 backdrop:bg-black/30
+      className={`bg-ink-100 text-bone p-0 w-full backdrop:bg-black/30
                  border-[0.5px] border-hairline-3 rounded-none
-                 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.7)] slide-in"
+                 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.7)] slide-in
+                 ${size === "wide" ? "max-w-[min(860px,96vw)]" : "max-w-[min(540px,92vw)]"}`}
     >
       <div className="relative border-b-[0.5px] border-hairline-2 px-6 py-5">
         {eyebrow ? (

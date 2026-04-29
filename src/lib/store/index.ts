@@ -38,6 +38,7 @@ function seed(): Session {
     })),
     players: [],
     matchesCompleted: 0,
+    totalMatchDurationMs: 0,
     startedAt: now(),
   };
 }
@@ -514,7 +515,9 @@ export const useStore = create<SettoStore>()(
               : c,
           );
           const matchesCompleted = (session.matchesCompleted ?? 0) + 1;
-          return { session: { ...session, courts, players, matchesCompleted } };
+          const matchDuration = court.matchStartedAt ? now() - court.matchStartedAt : 0;
+          const totalMatchDurationMs = (session.totalMatchDurationMs ?? 0) + matchDuration;
+          return { session: { ...session, courts, players, matchesCompleted, totalMatchDurationMs } };
         });
       },
 

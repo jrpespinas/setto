@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type DragEvent } from "react";
+import { toast } from "sonner";
 import { useStore, selectors } from "@/lib/store";
 import { LEVEL_LABEL, type Player, type QueueCard } from "@/lib/types";
 import { Chip, LiveDot } from "@/components/ui/chip";
@@ -137,7 +138,13 @@ function QueueCardRow({
       <ConfirmDialog
         open={clearOpen}
         onClose={() => setClearOpen(false)}
-        onConfirm={() => dumpQueueToIdle(card.id)}
+        onConfirm={() => {
+          const prev = useStore.getState().session;
+          dumpQueueToIdle(card.id);
+          toast("Queue slot cleared", {
+            action: { label: "Undo", onClick: () => useStore.getState().restoreSession(prev) },
+          });
+        }}
         title="Clear queue slot?"
         description="All players in this queue slot will be returned to idle."
         confirmLabel="Clear"

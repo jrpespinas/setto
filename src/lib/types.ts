@@ -51,6 +51,7 @@ export type Session = {
   queue: QueueCard[];
   players: Player[];
   matchesCompleted: number;
+  totalMatchDurationMs: number;
   startedAt?: number;
 };
 

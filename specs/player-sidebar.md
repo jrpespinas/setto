@@ -1,93 +1,212 @@
 # Spec: Player Sidebar
 
-## Summary
-A fixed sidebar (15% width) containing the roster of players for the session. Players are organized into three collapsible sections — Idle, Break, and Done — and can be dragged to courts or queue cards from any section. A single unified scroll container with VS Code-style sticky section headers allows the sidebar to scroll while headers snap at the top.
+> **Scope** — The right-hand 15% sidebar: roster CRUD, search/filter, sort priority, and the per-player action menu. Players from this list are draggable into court and queue slots throughout the app.
 
-## Functional Requirements
-- Player must have: name, gender (male/female), level, status, payment status, games played count, and a per-status timer.
-- Player levels: beginner, low-intermediate, intermediate, upper-intermediate, advanced, professional.
-- Player statuses: idle, waiting, playing, break, done.
-- **All players (Idle, Break, Done) are draggable** to a `<court>` slot or `<queue>` card slot. No restriction based on status.
-- The sidebar has three sections: Idle, Break, Done.
-  - **Idle Section**: Players sorted by longest wait (earliest `statusSince`), then earliest arrival (`arrivedAt`).
-  - **Break Section**: Player timer continues accumulating. Timer is preserved when moving between Idle ↔ Break — `statusSince` is not reset on idle/break transitions, only when entering a completely different status (playing, waiting, done).
-  - **Done Section**: Payment status is visible and togglable via the hover overlay. Unpaid players show a pulsing red status rail.
-- Each section is collapsible via its header button. Collapsed sections snap as a thin strip at the top (VS Code-style sticky headers) — the section header remains visible and pinned while scrolling.
-- **Unified scroll**: A single `overflow-y-auto` container wraps all three sections. Section headers use `sticky top-0 z-10` to pin in place as the user scrolls.
-- A persistent filter input at the top of the sidebar allows filtering players by name across all sections simultaneously.
-- Players can be added via the **+ Add** button which opens the **Add Player** dialog.
+## 1. Domain Model
 
-## Masthead
-- Single combined heading: `[N] Players` where N is the total signed-in player count (no zero-padding).
-- No separate eyebrow labels or secondary counters — count and label are inline.
+### Player
+```ts
+type Player = {
+  id: string;
+  name: string;
+  gender: "male" | "female";
+  level: Level;             // 6-tier ranking
+  status: PlayerStatus;     // "idle" | "waiting" | "playing" | "break" | "done"
+  paid: boolean;
+  arrivedAt: number;        // ms epoch — first sign-in
+  statusSince: number;      // ms epoch — start of current wait/play period
+  gamesPlayed: number;
+};
+```
 
-## Player Card Layout
-- **Index**: monospaced position number, left-aligned, no zero-padding (1, 2, 3…).
-- **Name row**: `♂/♀` gender icon (color-coded) · player name (bold) · level chip (ranking color) — all inline, left-aligned.
-- **Status rail**: 2px vertical strip on the left edge — grey (idle), cold/blue (break), moss/green (paid done), alert/red (unpaid done). Unpaid done rail pulses (`pulse-alert`).
-- **Timer + games played**: elapsed time since `statusSince` displayed top-right. When `gamesPlayed > 0`, a muted `Xg` label appears to the left of the timer (e.g. `2g  5m`). Hidden when 0 (new players start clean).
-- **Hover overlay**: on hover, card content blurs (`blur-[2px]`, `opacity-20`) and action buttons appear centered as an absolute overlay. No vertical height expansion.
-  - Idle actions: **Edit · Rest · Finish · Remove**
-  - Break actions: **Edit · Return · Finish · Remove**
-  - Done actions: **Edit · [✓ Paid + Undo] or [Mark Paid] · Return · Remove**
-  - Remove uses a 2-click confirm pattern (shows "Confirm?" for 2.5 s then auto-resets).
-- **Action button style**: `font-mono text-[9px] uppercase tracking-[0.22em]` with a `border-[0.5px] border-transparent` that reveals (`hover:border-neon/50` or `hover:border-alert/50`) on hover — hairline box appears on hover without layout shift.
+### Levels (6 tiers)
+`beginner` · `low-intermediate` · `intermediate` · `upper-intermediate` · `advanced` · `professional`
 
-## Done Section — Payment UX
-- **If paid**: shows a static `✓ Paid` badge (moss/green border, moss text) alongside a small `Undo` text link that reverts payment status.
-- **If unpaid**: shows a `Mark Paid` action button (alert-colored text, transitions to moss on hover).
-- This replaces a generic toggle — the paid state is clearly communicated by the badge, and the undo path is explicit.
+Sidebar cards show shorthand (`BEG`, `L-INT`, `INT`, `U-INT`, `ADV`, `PRO`). Dialogs use full labels.
 
-## Add Player Dialog
-- Positioned top-right on desktop (anchored below the trigger button with a 12px gap), slides up as a bottom sheet on mobile (≤640px).
-- Default values: **Intermediate** level, **Unpaid** payment status.
-- Level options use **full labels** (Beginner, Low-Intermediate, etc.) in a 2-column grid.
-- Name input receives autofocus on open (120ms timeout to work around mobile browser suppression).
-- Duplicate players (same name + level + gender) are rejected silently.
+### Status semantics
+| Status   | Meaning                                                         |
+|----------|-----------------------------------------------------------------|
+| `idle`   | Available, waiting for next match                               |
+| `waiting`| Assigned to a queue slot (pending match)                        |
+| `playing`| On a court mid-match                                            |
+| `break`  | Resting; preserves accumulated wait timer                       |
+| `done`   | Left for the day; lingers only if `paid === false`              |
 
-## Edit Player Dialog
-- Allows updating name, gender, and level only. No win/loss fields.
-- Level options use **full labels** in a 2-column grid (matching the Add dialog).
+## 2. Layout
 
-## Level Chip Colors (Ranking Tiers)
-| Level | Tier | Chip style |
-|---|---|---|
-| Beginner | Bronze | warm amber bg, gold text |
-| Low-Intermediate | Silver | cool grey-blue bg, silver text |
-| Intermediate | Gold | deep amber bg, bright gold text |
-| Upper-Intermediate | Platinum | cyan-steel bg, sky text |
-| Advanced | Diamond | deep blue bg, bright blue text |
-| Professional | Legend | violet bg, purple text |
+A flat, unified scrollable list — **not** three collapsible sections. There is one header, one filter panel, one search input, and one ordered list (`<ol>`) of player cards.
 
-Chip backgrounds use semi-transparent colors in the sidebar (boosted opacity ~0.60 for gym lighting readability).
+```
+┌─────────────────────────┐
+│ [N] Players      + Add  │  header
+│ [search input        ×] │
+│ [⚙ Filters (count)]     │  collapsible filter panel
+├─────────────────────────┤
+│  player card             │
+│  player card             │
+│  …                       │  scrollable
+└─────────────────────────┘
+```
 
-## UI/UX Considerations
-1. **Hover Overlay**: Card content blurs and action buttons float above. Keeps cards compact — no layout shift on hover.
-2. **Status Rail**: 2px left-edge strip conveys status at a glance.
-3. **Payment Pulse**: Unpaid Done players receive a red left-rail pulse (`pulse-alert`).
-4. **Drop Zones**: Sections accept player drops. Drop target highlighted with a neon-soft background tint.
-5. **Section Counters**: Each collapsible header displays the live player count for that section (no zero-padding).
-6. **Empty States**: Sections show a descriptive placeholder when no players are present.
-7. **Sticky Collapse**: Collapsed section headers remain pinned at the top of the scroll container as thin strips, preserving navigation access without taking space.
+- Width: `xl:[grid-template-columns:_85fr_15fr]`. Min-width `240px`.
+- Background: `bg-ink-050` with a `rule-left` hairline.
+- The list is the sole `overflow-y-auto` container — header pins above.
 
-## Edge Cases
-- Duplicate players: prevented by name + level + gender identity key; silently returns `false` from `addPlayer`.
-- Empty state: each section shows a contextual placeholder.
-- Deletion: two-click confirm inside the hover overlay (auto-resets after 2.5 s).
-- Idle ↔ Break transition: `statusSince` is preserved so accumulated wait time carries through rest periods.
+## 3. Sort Order (single ordered list)
 
-## Acceptance Criteria
-- Players in Idle re-sort automatically when a match finishes or a player is added.
-- Dragging any player (idle, break, or done) to a court/queue slot updates their status and timer immediately.
-- Payment toggle in Done section persists across refreshes (Zustand + localStorage).
-- All three sections can be independently collapsed; headers stay sticky at the top.
-- Filter input narrows the visible roster in real time across all sections.
-- Edit dialog allows updating name, gender, and level without page refresh.
-- Wait timer is not reset when a player moves between Idle and Break.
-- `gamesPlayed` increments correctly when a match is finished and displays beside the timer.
+Players are partitioned into three groups, concatenated in order:
 
-## Constraints
-- A player cannot exist in more than one section or court/queue simultaneously.
-- Timers update every second via a single `setInterval` in `PlayerSidebar` — a `tick` timestamp is passed as a prop to each section and card. No per-card intervals.
-- Level chips in sidebar cards use shorthand abbreviations (BEG, L-INT, INT, U-INT, ADV, PRO; ♂/♀) for compact display. Full labels are used only in Add/Edit dialogs.
-- No win/loss tracking. Win rates are not computed or displayed anywhere.
+1. **Active** — `status ∈ {idle, playing, waiting}`. Sort by fewest `gamesPlayed`, then earliest `statusSince` (longest wait first).
+2. **Resting** — `status === "break"`. Same sort key as Active. Rendered at 50% opacity.
+3. **Done & unpaid** — `status === "done" && !paid`. Sorted by `arrivedAt`. Paid `done` players are not shown (they are auto-removed; see §6.3).
+
+The ordering is recomputed via `useMemo` keyed on `session.players` plus filter inputs. The sidebar passes a single shared `tick` (1 s `setInterval`) down to cards — there is **no** per-card timer.
+
+## 4. Search & Filters
+
+### 4.1 Search
+- Single text input; case-insensitive substring match against `player.name`.
+- × button clears; otherwise shows search icon at right edge.
+
+### 4.2 Filter panel (collapsible)
+Toggled by a "Filters" pill button that displays the active-filter count badge.
+
+| Row    | Options                                                          |
+|--------|------------------------------------------------------------------|
+| Lvl    | All · Beginner · L-Int · Int · U-Int · Adv · Pro                 |
+| Sex    | All · ♂ · ♀                                                      |
+| Status | All · Idle · Resting · Playing · Done                            |
+| Pay    | All · Paid · Unpaid                                              |
+
+- "Status: Playing" matches both `playing` **and** `waiting` (queue counts as playing for filter purposes).
+- "Clear all" link appears in the panel when ≥1 filter is non-`all`.
+
+## 5. Player Card
+
+```
+│ N ♂ Name [LVL]  [Unpaid?]    Xg  Mm  ⚙ │
+```
+
+| Element        | Details                                                           |
+|----------------|-------------------------------------------------------------------|
+| Index `N`      | Mono digit, 1-based, no zero-padding. Reflects current sort.      |
+| Gender icon    | `Mars` / `Venus` 12px, color-coded via `g-male` / `g-female`.     |
+| Name           | `font-display font-semibold text-[15px]`, truncated.              |
+| Level chip     | Shorthand label, level-tinted background.                         |
+| Unpaid badge   | `Unpaid` mono text in `text-alert` — only when `done && !paid`.   |
+| Games          | `Xg` mono, hidden when `gamesPlayed === 0`.                       |
+| Timer          | `formatShortDuration(tick - statusSince)` — hidden while `playing`/`waiting`/`done`. |
+| Cog (⚙)        | `Settings2` icon — opens the action menu.                         |
+
+### 5.1 Status rail (2 px left border)
+| Status                 | Class       |
+|------------------------|-------------|
+| `playing` / `waiting`  | `bg-neon`   |
+| `break`                | `bg-cold`   |
+| `done`                 | `bg-alert`  |
+| `idle`                 | (none)      |
+
+### 5.2 Background tint (idle players only)
+Computed from `waitMs / avgWaitMs`:
+- `≤ 0.75` → no tint.
+- `0.75 – 1.5` → warm tint, alpha ramps `0 → 0.10`.
+- `> 1.5` → alert tint, alpha ramps `0.10 → 0.18`.
+
+`playing` / `waiting` cards always show a faint neon tint (`rgba(0,223,192,0.08)`).
+
+### 5.3 Drag behaviour
+- Only `idle` players are `draggable`. Other statuses preflight-cancel the drag.
+- On drag start, `document.body` gets a `dragging` class (used to dim drop targets globally).
+- DataTransfer payload: `text/player-id`.
+
+## 6. Action Menu (cog popup)
+
+Clicking the cog opens a `position: fixed` popup positioned via `getBoundingClientRect()`. Fixed positioning is required so the menu **escapes the parent's `overflow-y-auto`** clipping. Outside-click (mousedown) closes it.
+
+### 6.1 Menu items
+| Item                  | Visible when                       | Effect                                                                 |
+|-----------------------|------------------------------------|------------------------------------------------------------------------|
+| Edit player           | always                             | Opens `EditPlayerDialog`                                               |
+| → Set Idle            | `status !== "idle"`                | `setStatus(id, "idle")` + Undo toast                                   |
+| → Set Resting         | `status !== "break" && !done`      | `setStatus(id, "break")` + Undo toast                                  |
+| → Set Done            | `status !== "done"`                | Opens `ConfirmDialog` "Mark as done?" → `setStatus(id, "done")`        |
+| Mark Paid / Unpaid    | always                             | `togglePaid(id)` + Undo toast                                          |
+| Remove                | always (alert color)               | Opens `ConfirmDialog` "Remove player?" `danger` → `removePlayer(id)`   |
+
+**No inline `Yes/No` confirm rows.** All destructive actions go through the modal `ConfirmDialog` to prevent double-click misfires.
+
+### 6.2 Undo pattern
+Every action snapshots `useStore.getState().session` *before* mutating, then surfaces a Sonner toast with an Undo button calling `restoreSession(prev)`.
+
+### 6.3 Auto-removal
+- Marking a `done` player paid → player is **deleted** from the session (paid + done is fully resolved, so the row would just be visual noise).
+- Setting an already-paid player to `done` → same auto-deletion.
+
+## 7. Add / Edit Dialogs
+
+### 7.1 Add Player
+- Defaults: `Intermediate`, `Unpaid`.
+- Name input autofocuses (`120ms` timeout to defeat mobile suppression).
+- Level options use **full labels** in a 2-column grid.
+- Duplicates are silently rejected (`addPlayer` returns `false`); identity key = `name.toLowerCase() :: level :: gender`.
+
+### 7.2 Edit Player
+- Editable: name, gender, level. No status, no payment, no `gamesPlayed`.
+- Same level-grid as Add Player.
+
+## 8. Level Chip Palette (sidebar)
+
+| Level                | Tier      | Tone                                  |
+|----------------------|-----------|---------------------------------------|
+| Beginner             | Bronze    | warm amber bg, gold text              |
+| Low-Intermediate     | Silver    | cool grey-blue bg, silver text        |
+| Intermediate         | Gold      | deep amber bg, bright gold text       |
+| Upper-Intermediate   | Platinum  | cyan-steel bg, sky text               |
+| Advanced             | Diamond   | deep blue bg, bright blue text        |
+| Professional         | Legend    | violet bg, purple text                |
+
+Sidebar chips are semi-transparent (~0.60 opacity) — the higher contrast variant lives on the court surface (see `courts.md` §6.4).
+
+## 9. Edge Cases
+
+| Case                                            | Behaviour                                                                |
+|-------------------------------------------------|--------------------------------------------------------------------------|
+| Duplicate add                                   | Rejected silently (`addPlayer` returns `false`); UI shows no error toast |
+| Empty roster                                    | Sidebar shows `"No players yet.\nAdd one to start."`                     |
+| Empty filter result                             | Sidebar shows `"No players match."`                                      |
+| Idle ↔ Break transition                         | `statusSince` preserved — accumulated wait time carries through          |
+| Re-entering from `done`                         | `statusSince` reset on `setStatus`                                       |
+| Removing a player on a court / queue            | `removePlayer` releases them from both via `releaseFromCourts/Queue`     |
+| Filter panel + clear button                     | "Clear all" only renders when `activeFilterCount > 0`                    |
+
+## 10. Acceptance Criteria
+
+1. Sidebar renders one flat list; players auto-resort when state changes (no manual refresh).
+2. Filters compose multiplicatively; "Status: Playing" matches both `playing` and `waiting`.
+3. Drag works only from `idle` cards; non-idle cards preflight-cancel.
+4. Set Done and Remove use modal `ConfirmDialog`; no inline `Yes/No` row exists in the menu.
+5. Outside-click closes the cog menu; the menu remains positioned correctly when the sidebar scrolls (fixed positioning).
+6. Marking a `done` player paid removes them from the session.
+7. Wait timer is **not reset** on idle ↔ break transitions; it **is** reset on re-entry from `done`.
+8. Background tint on idle cards reflects wait urgency vs. session average.
+9. All destructive actions are undoable from the toast.
+
+## 11. Constraints
+
+- A player exists in exactly one of: sidebar, court slot, queue slot. Enforced by `releaseFromCourts` / `releaseFromQueue` on every assignment.
+- A single 1 s `setInterval` in `PlayerSidebar` drives all card timers. **No per-card intervals.**
+- Cog menu must use `position: fixed` so it escapes the sidebar's `overflow-y-auto` clipping.
+- Level chips in cards use **shorthand**; dialogs use **full labels**.
+- No win/loss tracking. `gamesPlayed` is the only match-related counter on a player.
+
+## 12. Implementation Pointers
+
+| Concern             | File                                                            |
+|---------------------|-----------------------------------------------------------------|
+| Sidebar shell       | `src/components/sidebar/player-sidebar.tsx`                     |
+| Player card         | `src/components/sidebar/player-card.tsx`                        |
+| Add dialog          | `src/components/dialogs/add-player-dialog.tsx`                  |
+| Edit dialog         | `src/components/dialogs/edit-player-dialog.tsx`                 |
+| Confirm dialog      | `src/components/dialogs/confirm-dialog.tsx`                     |
+| Store actions       | `src/lib/store/index.ts` (`addPlayer`, `updatePlayer`, `removePlayer`, `setStatus`, `togglePaid`, `restoreSession`) |

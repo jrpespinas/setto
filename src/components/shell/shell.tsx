@@ -118,7 +118,7 @@ export function Shell() {
           {/* Footer */}
           <footer className="shrink-0 rule-top px-6 md:px-8 py-3 flex items-center justify-between">
             <span className="font-mono text-[9.5px] uppercase tracking-[0.28em] text-bone-4">
-              No database · Session persists in your browser
+              Session persists in your browser
             </span>
           </footer>
         </main>

@@ -2,7 +2,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## About
-Setto is a professional badminton match-making dashboard for tracking wins, players, and match states. It utilizes Spec-Driven Development (SDD) to manage player rotations and court assignments.
+Queueing is a professional badminton match-making dashboard for tracking wins, players, and match states. It utilizes Spec-Driven Development (SDD) to manage player rotations and court assignments.
 ## SDD Workflow (Critical Source of Truth)
 Before writing any code, Claude must read the corresponding specification in the /specs directory.
 

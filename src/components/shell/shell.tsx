@@ -72,8 +72,8 @@ export function Shell() {
           <header className="shrink-0 rule-bottom px-6 md:px-8 py-5 bg-ink-050">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div className="flex items-end gap-4">
-                <h1 className="statement text-[56px] lowercase leading-[0.85] tracking-[-0.05em]">
-                  setto
+                <h1 className="statement text-[48px] leading-[0.85] tracking-[-0.05em]">
+                  Queueing
                 </h1>
                 <div className="pb-1.5">
                   <Eyebrow>Session</Eyebrow>

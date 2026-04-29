@@ -13,7 +13,7 @@ import type {
   Session,
 } from "@/lib/types";
 
-const STORAGE_KEY = "setto:session:v2";
+const STORAGE_KEY = "queueing:session:v2";
 const QUEUE_SLOTS = 3;
 
 function uid() {
@@ -105,13 +105,13 @@ type Actions = {
   restoreSession: (session: Session) => void;
 };
 
-export type SettoStore = {
+export type QueueingStore = {
   session: Session;
   hydrated: boolean;
   setHydrated: (v: boolean) => void;
 } & Actions;
 
-export const useStore = create<SettoStore>()(
+export const useStore = create<QueueingStore>()(
   persist(
     (set, get) => ({
       session: seed(),

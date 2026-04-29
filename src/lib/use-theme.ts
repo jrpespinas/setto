@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 type Theme = "dark" | "light";
 
-const STORAGE_KEY = "setto:theme";
+const STORAGE_KEY = "queueing:theme";
 const DEFAULT: Theme = "dark";
 
 function getInitialTheme(): Theme {

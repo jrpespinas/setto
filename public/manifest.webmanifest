@@ -1,6 +1,6 @@
 {
-  "name": "Setto - queueing desk",
-  "short_name": "Setto",
+  "name": "Queueing - queueing desk",
+  "short_name": "Queueing",
   "description": "A live session desk for badminton — courts, players, queues, and match flow.",
   "start_url": "/",
   "scope": "/",

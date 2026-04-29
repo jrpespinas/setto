@@ -23,15 +23,15 @@ const figtree = Figtree({
   display: "swap",
 });
 
-const APP_NAME = "setto";
+const APP_NAME = "Queueing";
 const APP_DESCRIPTION =
   "A live session desk for badminton — courts, players, queues, and match flow. Stays resilient offline.";
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,
   title: {
-    default: "setto — queueing desk",
-    template: "%s · setto",
+    default: "queueing — queueing desk",
+    template: "%s · queueing",
   },
   description: APP_DESCRIPTION,
   manifest: "/manifest.webmanifest",

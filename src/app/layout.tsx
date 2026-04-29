@@ -30,7 +30,7 @@ const APP_DESCRIPTION =
 export const metadata: Metadata = {
   applicationName: APP_NAME,
   title: {
-    default: "queueing — queueing desk",
+    default: "Queueing",
     template: "%s · queueing",
   },
   description: APP_DESCRIPTION,

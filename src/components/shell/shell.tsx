@@ -61,6 +61,7 @@ export function Shell() {
         className="
           flex-1
           grid
+          min-w-[860px]
           xl:h-screen xl:overflow-hidden
           xl:[grid-template-columns:minmax(0,85fr)_minmax(240px,15fr)]
         "

@@ -17,7 +17,7 @@ export function CourtGrid({ onAddCourt }: { onAddCourt: () => void }) {
   if (courts.length === 0) return <EmptyCourts onAdd={onAddCourt} />;
 
   return (
-    <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+    <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(380px,1fr))]">
       {courts.map((c, i) => (
         <CourtCard
           key={c.id}

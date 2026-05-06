@@ -30,6 +30,8 @@ export type Player = {
   /** Timestamp the current status began — drives all section timers. */
   statusSince: number;
   gamesPlayed: number;
+  wins: number;
+  losses: number;
 };
 
 export type Court = {
@@ -38,6 +40,7 @@ export type Court = {
   size: CourtSize;
   slots: (string | null)[];
   matchStartedAt?: number;
+  createdAt: number;
 };
 
 export type QueueCard = {
@@ -53,6 +56,12 @@ export type Session = {
   matchesCompleted: number;
   totalMatchDurationMs: number;
   startedAt?: number;
+  endedAt?: number;
+};
+
+export type FeesConfig = {
+  courtFeePerHour: number;
+  playerFee: number | null; // null = auto-split total court cost among active players
 };
 
 export const LEVELS: Level[] = [

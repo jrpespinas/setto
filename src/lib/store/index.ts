@@ -12,6 +12,7 @@ import type {
   QueueCard,
   Session,
 } from "@/lib/types";
+import { useFeesStore } from "@/lib/store/fees";
 
 const STORAGE_KEY = "queueing:session:v2";
 const QUEUE_SLOTS = 3;
@@ -22,6 +23,15 @@ function uid() {
 
 function now() {
   return Date.now();
+}
+
+export function billedHours(createdAtMs: number, endMs: number): number {
+  const totalMinutes = Math.max(0, (endMs - createdAtMs) / 60_000);
+  const fullHours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+  if (remainingMinutes === 0) return fullHours;
+  if (remainingMinutes < 30) return fullHours + 0.5;
+  return fullHours + 1;
 }
 
 function identityKey(d: { name: string; gender: Gender; level: Level }) {
@@ -101,6 +111,7 @@ type Actions = {
   togglePaid: (playerId: string) => void;
   setStatus: (playerId: string, status: PlayerStatus) => void;
 
+  endSession: () => void;
   resetAll: () => void;
   restoreSession: (session: Session) => void;
 };
@@ -127,7 +138,7 @@ export const useStore = create<QueueingStore>()(
             ...session,
             courts: [
               ...session.courts,
-              { id: uid(), number: nextNumber, size, slots: Array(size).fill(null) },
+              { id: uid(), number: nextNumber, size, slots: Array(size).fill(null), createdAt: now() },
             ],
           },
         }));
@@ -203,6 +214,8 @@ export const useStore = create<QueueingStore>()(
                 arrivedAt: now(),
                 statusSince: now(),
                 gamesPlayed: 0,
+                wins: 0,
+                losses: 0,
               },
             ],
           },
@@ -490,7 +503,7 @@ export const useStore = create<QueueingStore>()(
         });
       },
 
-      finishMatch(courtId, _winner) {
+      finishMatch(courtId, winner) {
         set(({ session }) => {
           const court = session.courts.find((c) => c.id === courtId);
           if (!court) return { session };
@@ -501,11 +514,15 @@ export const useStore = create<QueueingStore>()(
 
           const players = session.players.map((p) => {
             if (!ids.includes(p.id)) return p;
+            const isWin  = (winner === "A" && A.includes(p.id)) || (winner === "B" && B.includes(p.id));
+            const isLoss = (winner === "A" && B.includes(p.id)) || (winner === "B" && A.includes(p.id));
             return {
               ...p,
               status: "idle" as PlayerStatus,
               statusSince: now(),
               gamesPlayed: (p.gamesPlayed ?? 0) + 1,
+              wins:   (p.wins   ?? 0) + (isWin  ? 1 : 0),
+              losses: (p.losses ?? 0) + (isLoss ? 1 : 0),
             };
           });
 
@@ -587,7 +604,39 @@ export const useStore = create<QueueingStore>()(
         });
       },
 
+      endSession() {
+        const { session } = get();
+        const { config } = useFeesStore.getState();
+        const endMs = now();
+        const totalCourtCost = session.courts.reduce(
+          (sum, court) => sum + billedHours(court.createdAt, endMs) * config.courtFeePerHour,
+          0,
+        );
+        useFeesStore.getState().freezeCourtCost(totalCourtCost);
+
+        const seedQueue = Array.from({ length: QUEUE_SLOTS }, () => ({
+          id: uid(),
+          size: 4 as CourtSize,
+          slots: [null, null, null, null],
+        }));
+
+        set(({ session: s }) => ({
+          session: {
+            ...s,
+            courts: [],
+            queue: seedQueue,
+            endedAt: endMs,
+            players: s.players.map((p) =>
+              p.status === "playing" || p.status === "waiting"
+                ? { ...p, status: "idle" as PlayerStatus, statusSince: endMs }
+                : p,
+            ),
+          },
+        }));
+      },
+
       resetAll() {
+        useFeesStore.getState().resetSessionFees();
         set({ session: seed() });
       },
 

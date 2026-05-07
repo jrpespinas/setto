@@ -4,25 +4,35 @@ import { useMemo, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 import { useStore, selectors } from "@/lib/store";
 import { LEVEL_LABEL, type Player, type QueueCard } from "@/lib/types";
-import { Chip, LiveDot } from "@/components/ui/chip";
+import { LiveDot } from "@/components/ui/chip";
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog";
 
-/** 4-slot queue rail — "prototype matches" feeding the courts.
- * Ghost-bordered, ready-pulses when filled to a valid size. */
+/** 4-slot queue rail — prototype matches feeding the courts. */
 export function QueueRail() {
-  const session = useStore((s) => s.session);
+  const session    = useStore((s) => s.session);
   const playersById = useMemo(() => selectors.byId(session), [session]);
-  const queue = session.queue;
+  const queue       = session.queue;
+  const readyCount  = queue.filter((q) => q.slots.every(Boolean)).length;
 
   return (
-    <aside className="flex flex-col bg-ink-100 border-[0.5px] border-hairline-2">
+    <aside className="flex flex-col bg-ink-050 border-[0.5px] border-hairline-2">
       <header className="px-4 pt-4 pb-3 rule-bottom">
-        <h2 className="statement text-[22px] leading-none">Match Queue</h2>
-        <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone-4 mt-2">
-          {queue.filter((q) => q.slots.some(Boolean)).length} / 4 matches ready
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="statement text-[22px] leading-none">Match Queue</h2>
+          <span className="font-mono digit text-[11px] text-bone-3 tabular-nums shrink-0">
+            {readyCount} / 4
+          </span>
+        </div>
+        <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone-4 mt-1.5">
+          {readyCount === 4
+            ? "All slots ready"
+            : readyCount === 0
+            ? "Drag players to fill slots"
+            : `${4 - readyCount} slot${4 - readyCount > 1 ? "s" : ""} pending`}
         </p>
       </header>
-      <ul>
+
+      <ul className="flex flex-col gap-2 p-3">
         {queue.map((q, i) => (
           <QueueCardRow
             key={q.id}
@@ -45,22 +55,20 @@ function QueueCardRow({
   index: number;
   playersById: Record<string, Player>;
 }) {
-  // FIX: Extracted into individual selectors to avoid returning a new object literal on every render
   const assignToQueueSlot = useStore((s) => s.assignToQueueSlot);
-  const releaseQueueSlot = useStore((s) => s.releaseQueueSlot);
-  const dumpQueueToIdle = useStore((s) => s.dumpQueueToIdle);
-
+  const releaseQueueSlot  = useStore((s) => s.releaseQueueSlot);
+  const dumpQueueToIdle   = useStore((s) => s.dumpQueueToIdle);
   const [clearOpen, setClearOpen] = useState(false);
 
-  const filled = card.slots.filter(Boolean).length;
-  const half = card.slots.length / 2;
-  const teamA = card.slots.slice(0, half);
-  const teamB = card.slots.slice(half);
-  const isReady = filled === card.slots.length;
+  const filled     = card.slots.filter(Boolean).length;
+  const half       = card.slots.length / 2;
+  const teamA      = card.slots.slice(0, half);
+  const teamB      = card.slots.slice(half);
+  const isReady    = filled === card.slots.length;
+  const isPartial  = filled > 0 && !isReady;
   const isDraggable = filled > 0;
 
   const handleDragStart = (e: DragEvent<HTMLLIElement>) => {
-    // Don't hijack drags that originate from a child player slot
     if ((e.target as HTMLElement).closest("[data-player-slot]")) {
       e.stopPropagation();
       return;
@@ -71,9 +79,7 @@ function QueueCardRow({
     document.body.classList.add("dragging");
   };
 
-  const handleDragEnd = () => {
-    document.body.classList.remove("dragging");
-  };
+  const handleDragEnd = () => document.body.classList.remove("dragging");
 
   return (
     <>
@@ -82,37 +88,64 @@ function QueueCardRow({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         className={`
-          relative rule-bottom last:border-b-0 px-4 py-3.5
+          relative bg-white border-[0.5px] transition-colors duration-200
+          ${isReady   ? "border-neon shadow-[0_0_0_3px_var(--color-neon-soft)]" : ""}
+          ${isPartial ? "border-warm/60" : ""}
+          ${!isReady && !isPartial ? "border-hairline-2" : ""}
           ${isDraggable ? "cursor-grab active:cursor-grabbing" : ""}
-          ${isReady ? "bg-neon-ghost" : ""}
         `}
       >
-        <div className="flex items-center justify-between mb-2.5">
+        {/* Card header */}
+        <div className="flex items-center justify-between px-3 pt-2.5 pb-2">
           <div className="flex items-center gap-2">
             {isDraggable && (
               <span className="text-bone-4 text-[13px] leading-none select-none" title="Drag to a court" aria-hidden>
                 ⠿
               </span>
             )}
-            <span className="font-mono digit text-[9px] text-bone-4 tracking-[0.14em]">
-              Q·{index}
+            <span className={`font-mono text-[10px] font-bold tracking-[0.16em] ${isReady ? "text-neon" : "text-bone-3"}`}>
+              Q{index}
             </span>
-            <Chip tone={isReady ? "neon" : "muted"}>
-              {isReady ? <LiveDot className="bg-ink-000" /> : null}
-              {isReady ? "Ready" : `${filled}/${card.slots.length}`}
-            </Chip>
+
+            {/* Progress pips */}
+            <div className="flex items-center gap-[3px]">
+              {card.slots.map((slot, i) => (
+                <div
+                  key={i}
+                  className={`w-[5px] h-[5px] rounded-full transition-colors duration-200 ${
+                    slot
+                      ? isReady ? "bg-neon" : "bg-warm"
+                      : "bg-hairline-3"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
-          {filled > 0 ? (
-            <button
-              onClick={() => setClearOpen(true)}
-              className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone-4 hover:text-alert cursor-pointer"
-            >
-              Clear
-            </button>
-          ) : null}
+
+          <div className="flex items-center gap-2">
+            {isReady && (
+              <span className="font-mono text-[8px] uppercase tracking-[0.18em] text-neon flex items-center gap-1">
+                <LiveDot className="bg-neon" /> Ready
+              </span>
+            )}
+            {filled > 0 && !isReady && (
+              <span className="font-mono text-[8px] text-bone-4 tabular-nums">
+                {filled}/{card.slots.length}
+              </span>
+            )}
+            {filled > 0 && (
+              <button
+                onClick={() => setClearOpen(true)}
+                className="font-mono text-[8px] uppercase tracking-[0.18em] text-bone-4 hover:text-alert cursor-pointer transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-stretch">
+        {/* Teams */}
+        <div className="grid grid-cols-[1fr_20px_1fr] px-3 pb-3 gap-x-1">
           <TeamSide
             slots={teamA}
             offset={0}
@@ -121,8 +154,8 @@ function QueueCardRow({
             onAssign={assignToQueueSlot}
             onRelease={releaseQueueSlot}
           />
-          <div className="flex items-center font-display italic text-bone-4 text-[11px]">
-            vs
+          <div className="flex items-center justify-center">
+            <span className="font-display italic text-[10px] text-bone-4">vs</span>
           </div>
           <TeamSide
             slots={teamB}
@@ -202,8 +235,6 @@ function QueueSlot({
   };
 
   if (player) {
-    // Apply level class directly to the cell — bg + text color are baked in.
-    // Removing the chip frees enough width that most names fit without clipping.
     return (
       <div
         data-player-slot
@@ -213,23 +244,18 @@ function QueueSlot({
           e.dataTransfer.setData("text/player-id", player.id);
           e.dataTransfer.effectAllowed = "move";
         }}
-        className={`lvl-${player.level} h-[32px] border-[0.5px] flex items-center gap-1.5 px-2 cursor-grab active:cursor-grabbing active:opacity-70`}
+        className={`lvl-${player.level} h-[30px] border-[0.5px] flex items-center gap-1.5 px-2 cursor-grab active:cursor-grabbing active:opacity-70 transition-opacity`}
       >
-        {/* Gender icon — inherits level text color, always contrasted */}
-        <span className="shrink-0 text-[11px] font-bold leading-none opacity-80" aria-hidden>
+        <span className="shrink-0 text-[10px] font-bold leading-none opacity-70" aria-hidden>
           {player.gender === "male" ? "♂" : "♀"}
         </span>
-
-        {/* Name — clips without ellipsis so it doesn't look truncated */}
         <span className="font-display font-semibold text-[12px] leading-tight flex-1 min-w-0 overflow-hidden whitespace-nowrap">
           {player.name}
         </span>
-
-        {/* Remove — explicit opacity so it works on any level bg */}
         <button
           onClick={onRelease}
           aria-label={`Remove ${player.name}`}
-          className="shrink-0 font-mono text-[12px] opacity-50 hover:opacity-100 cursor-pointer pl-0.5"
+          className="shrink-0 font-mono text-[13px] opacity-40 hover:opacity-100 cursor-pointer pl-0.5 transition-opacity"
         >
           ×
         </button>
@@ -247,10 +273,16 @@ function QueueSlot({
       }}
       onDragLeave={() => setOver(false)}
       onDrop={handleDrop}
-      className="h-[30px] border-[0.5px] border-dashed border-hairline-3 flex items-center px-2 hover:border-hairline-strong transition-colors"
+      className={`h-[26px] border-[0.5px] border-dashed flex items-center justify-center px-2 transition-colors ${
+        over
+          ? "border-neon bg-neon-ghost"
+          : "border-hairline-3 hover:border-bone-4"
+      }`}
     >
-      <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone-4">
-        Empty slot
+      <span className={`font-mono text-[8px] uppercase tracking-[0.2em] transition-colors ${
+        over ? "text-neon" : "text-bone-4"
+      }`}>
+        {over ? "Drop" : "Drag here"}
       </span>
     </div>
   );

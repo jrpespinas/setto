@@ -60,7 +60,7 @@ export function Shell({ children }: { children?: ReactNode }) {
         {/* BODY — splits into main + sidebar below the navbar */}
         <div
           className={`
-            flex-1 min-h-0 grid
+            flex-1 min-h-0 xl:overflow-hidden grid
             ${isFloor
               ? "xl:[grid-template-columns:minmax(0,85fr)_minmax(240px,15fr)]"
               : "xl:[grid-template-columns:minmax(0,1fr)]"

@@ -17,7 +17,7 @@ type PaymentFilter = "all" | "paid" | "unpaid";
 
 function SectionHeader({ label, count }: { label: string; count: number }) {
   return (
-    <div className="flex items-center justify-between px-4 py-1.5 rule-bottom bg-ink-000/30 sticky top-0 z-10">
+    <div className="flex items-center justify-between px-4 py-1.5 rule-bottom bg-ink-050 sticky top-0 z-10">
       <span className="font-mono text-[8px] uppercase tracking-[0.22em] text-bone-4">
         {label}
       </span>
@@ -98,7 +98,7 @@ export function PlayerSidebar() {
   };
 
   return (
-    <aside className="relative flex min-h-0 flex-col bg-ink-050 rule-left slide-in xl:h-full xl:overflow-hidden">
+    <aside className="relative flex min-h-0 flex-col bg-ink-050 rule-left slide-in xl:h-full overflow-hidden">
 
       {/* ── Header ───────────────────────────────────────────────────── */}
       <header className="shrink-0 px-4 pt-4 pb-3 rule-bottom space-y-2.5">

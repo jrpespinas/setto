@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useStore } from "@/lib/store";
 import { useFeesStore } from "@/lib/store/fees";
-import { ConfirmDialog } from "@/components/dialogs/confirm-dialog";
+import { useAuthStore } from "@/lib/store/auth";
+import { hashPassword, verifyPassword } from "@/lib/hash";
+import { PasswordGate } from "@/components/auth/password-gate";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { formatShortDuration } from "@/lib/format";
@@ -69,6 +71,112 @@ const inputClass =
   "border-[0.5px] border-hairline-2 bg-ink-050 px-3 py-2 font-mono text-[13px] text-bone outline-none focus:border-bone-3 w-28";
 
 // ── Main component ─────────────────────────────────────────────────────────
+
+function ChangePasswordSection() {
+  const passwordHash   = useAuthStore((s) => s.passwordHash);
+  const hint           = useAuthStore((s) => s.hint);
+  const changePassword = useAuthStore((s) => s.changePassword);
+
+  const [current,  setCurrent]  = useState("");
+  const [next,     setNext]     = useState("");
+  const [confirm,  setConfirm]  = useState("");
+  const [newHint,  setNewHint]  = useState(hint);
+  const [error,    setError]    = useState("");
+  const [success,  setSuccess]  = useState(false);
+  const [loading,  setLoading]  = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess(false);
+    if (!current) { setError("Enter your current password."); return; }
+    if (!next)    { setError("New password cannot be empty."); return; }
+    if (next !== confirm) { setError("New passwords do not match."); return; }
+
+    setLoading(true);
+    const valid = passwordHash ? await verifyPassword(current, passwordHash) : false;
+    if (!valid) {
+      setLoading(false);
+      setError("Current password is incorrect.");
+      setCurrent("");
+      return;
+    }
+    const hash = await hashPassword(next);
+    changePassword(hash, newHint.trim());
+    setLoading(false);
+    setSuccess(true);
+    setCurrent(""); setNext(""); setConfirm("");
+  };
+
+  return (
+    <Section title="Change Password">
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div>
+          <label className="font-mono text-[9px] uppercase tracking-[0.18em] text-bone-4 block mb-1.5">
+            Current password
+          </label>
+          <input
+            type="password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            placeholder="Enter current password"
+            className="w-full border-[0.5px] border-hairline-2 bg-ink-000 px-3 py-2.5 font-display text-[14px] text-bone placeholder:text-bone-4 outline-none focus:border-bone-3 transition-colors"
+          />
+          {hint && (
+            <p className="font-mono text-[9px] text-bone-4 mt-1">Hint: {hint}</p>
+          )}
+        </div>
+        <div>
+          <label className="font-mono text-[9px] uppercase tracking-[0.18em] text-bone-4 block mb-1.5">
+            New password
+          </label>
+          <input
+            type="password"
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+            placeholder="Enter new password"
+            className="w-full border-[0.5px] border-hairline-2 bg-ink-000 px-3 py-2.5 font-display text-[14px] text-bone placeholder:text-bone-4 outline-none focus:border-bone-3 transition-colors"
+          />
+        </div>
+        <div>
+          <label className="font-mono text-[9px] uppercase tracking-[0.18em] text-bone-4 block mb-1.5">
+            Confirm new password
+          </label>
+          <input
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="Re-enter new password"
+            className="w-full border-[0.5px] border-hairline-2 bg-ink-000 px-3 py-2.5 font-display text-[14px] text-bone placeholder:text-bone-4 outline-none focus:border-bone-3 transition-colors"
+          />
+        </div>
+        <div>
+          <label className="font-mono text-[9px] uppercase tracking-[0.18em] text-bone-4 block mb-1.5">
+            New hint <span className="normal-case tracking-normal text-bone-4">(optional)</span>
+          </label>
+          <input
+            type="text"
+            value={newHint}
+            onChange={(e) => setNewHint(e.target.value)}
+            placeholder="e.g. My badminton year"
+            className="w-full border-[0.5px] border-hairline-2 bg-ink-000 px-3 py-2.5 font-display text-[14px] text-bone placeholder:text-bone-4 outline-none focus:border-bone-3 transition-colors"
+          />
+        </div>
+        {error && (
+          <p className="font-mono text-[10px] text-alert uppercase tracking-[0.1em]">{error}</p>
+        )}
+        {success && (
+          <p className="font-mono text-[10px] text-neon uppercase tracking-[0.1em]">Password updated.</p>
+        )}
+        <div className="flex justify-end pt-1">
+          <Button type="submit" variant="solid" size="sm" disabled={loading}>
+            {loading ? "Updating…" : "Update password"}
+          </Button>
+        </div>
+      </form>
+    </Section>
+  );
+}
 
 export function FeesForm() {
   const session        = useStore((s) => s.session);
@@ -362,7 +470,10 @@ export function FeesForm() {
         )}
       </Section>
 
-      {/* ── E. Danger Zone ───────────────────────────────────────────── */}
+      {/* ── E. Change Password ───────────────────────────────────────── */}
+      <ChangePasswordSection />
+
+      {/* ── F. Danger Zone ───────────────────────────────────────────── */}
       <Section title="Danger Zone">
         <div className="flex items-center justify-between">
           <div>
@@ -377,7 +488,7 @@ export function FeesForm() {
         </div>
       </Section>
 
-      <ConfirmDialog
+      <PasswordGate
         open={resetOpen}
         onClose={() => setResetOpen(false)}
         onConfirm={() => useStore.getState().resetAll()}

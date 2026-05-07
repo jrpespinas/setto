@@ -20,7 +20,7 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { href: "/",         label: "Floor",    Icon: LayoutGrid           },
   { href: "/roster",   label: "Roster",   Icon: Users                },
-  { href: "/records",  label: "Records",  Icon: BarChart2, soon: true },
+  { href: "/records",  label: "Records",  Icon: BarChart2 },
   { href: "/settings", label: "Settings", Icon: Settings2 },
 ];
 

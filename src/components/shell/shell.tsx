@@ -4,19 +4,23 @@ import { useState, useEffect, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Toaster } from "sonner";
 import { useStore } from "@/lib/store";
+import { useAuthStore } from "@/lib/store/auth";
 import { MetricBar } from "@/components/metrics/metric-bar";
 import { CourtGrid } from "@/components/courts/court-grid";
 import { PlayerSidebar } from "@/components/sidebar/player-sidebar";
 import { QueueRail } from "@/components/queue/queue-rail";
 import { AddCourtDialog } from "@/components/dialogs/add-court-dialog";
-import { ConfirmDialog } from "@/components/dialogs/confirm-dialog";
+import { PasswordGate } from "@/components/auth/password-gate";
+import { SetupDialog } from "@/components/auth/setup-dialog";
 import { Navbar, BottomNav } from "./navbar";
 import { ServiceWorkerRegister } from "./sw-register";
 
 export function Shell({ children }: { children?: ReactNode }) {
-  const pathname = usePathname();
-  const isFloor  = pathname === "/";
-  const hydrated = useStore((s) => s.hydrated);
+  const pathname      = usePathname();
+  const isFloor       = pathname === "/";
+  const hydrated      = useStore((s) => s.hydrated);
+  const authHydrated  = useAuthStore((s) => s.hydrated);
+  const passwordHash  = useAuthStore((s) => s.passwordHash);
   const [addCourt, setAddCourt] = useState(false);
   const [endOpen,  setEndOpen]  = useState(false);
   const [clock, setClock] = useState("");
@@ -108,7 +112,7 @@ export function Shell({ children }: { children?: ReactNode }) {
       {isFloor && (
         <>
           <AddCourtDialog open={addCourt} onClose={() => setAddCourt(false)} />
-          <ConfirmDialog
+          <PasswordGate
             open={endOpen}
             onClose={() => setEndOpen(false)}
             onConfirm={handleEndSession}
@@ -118,6 +122,9 @@ export function Shell({ children }: { children?: ReactNode }) {
           />
         </>
       )}
+
+      {/* First-time auth setup — blocks all interaction until password is created */}
+      {authHydrated && !passwordHash && <SetupDialog />}
     </>
   );
 }

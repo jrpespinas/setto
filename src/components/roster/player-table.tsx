@@ -75,7 +75,8 @@ function EditableStatusChip({ player }: { player: Player }) {
   const [open, setOpen]           = useState(false);
   const [confirmDone, setConfirmDone] = useState(false);
   const [pos, setPos]             = useState({ top: 0, left: 0 });
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const btnRef   = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
 
   const { label, tone } = STATUS_META[player.status];
   const isSystemManaged = player.status === "waiting" || player.status === "playing";
@@ -83,7 +84,10 @@ function EditableStatusChip({ player }: { player: Player }) {
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => {
-      if (btnRef.current && !btnRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      const insideBtn   = btnRef.current?.contains(t);
+      const insidePopup = popupRef.current?.contains(t);
+      if (!insideBtn && !insidePopup) setOpen(false);
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
@@ -131,6 +135,7 @@ function EditableStatusChip({ player }: { player: Player }) {
 
       {open && options.length > 0 && (
         <div
+          ref={popupRef}
           className="fixed z-50 bg-ink-100 border-[0.5px] border-hairline-2 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.6)] py-1 min-w-[140px]"
           style={{ top: pos.top, left: pos.left }}
         >
@@ -630,9 +635,10 @@ export function PlayerTable() {
     else { setSortKey(key); setSortDir("desc"); }
   };
 
-  const rows = useMemo(() => {
+  const { rows, donePaidRows } = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const filtered = session.players.filter((p) => {
+    const active = session.players.filter((p) => !(p.status === "done" && p.paid));
+    const filtered = active.filter((p) => {
       if (q && !p.name.toLowerCase().includes(q)) return false;
       if (filters.level  !== "all" && p.level  !== filters.level)  return false;
       if (filters.gender !== "all" && p.gender !== filters.gender) return false;
@@ -641,7 +647,11 @@ export function PlayerTable() {
       if (filters.paid   === "unpaid" &&  p.paid)  return false;
       return true;
     });
-    return sortPlayers(filtered, sortKey, sortDir);
+    const donePaidRows = sortPlayers(
+      session.players.filter((p) => p.status === "done" && p.paid),
+      sortKey, sortDir,
+    );
+    return { rows: sortPlayers(filtered, sortKey, sortDir), donePaidRows };
   }, [session.players, search, filters, sortKey, sortDir]);
 
   const colHead = (col: SortKey, label: string, className = "") => (
@@ -692,8 +702,28 @@ export function PlayerTable() {
       {/* Row count */}
       <div className="shrink-0 pt-2.5 font-mono text-[9px] uppercase tracking-[0.2em] text-bone-4">
         {rows.length} player{rows.length !== 1 ? "s" : ""}
-        {rows.length !== session.players.length && ` of ${session.players.length}`}
+        {rows.length !== session.players.filter((p) => !(p.status === "done" && p.paid)).length &&
+          ` of ${session.players.filter((p) => !(p.status === "done" && p.paid)).length}`}
       </div>
+
+      {/* Done & Paid — persistent record */}
+      {donePaidRows.length > 0 && (
+        <div className="shrink-0 mt-6 border-[0.5px] border-hairline-2">
+          <div className="flex items-center justify-between px-3 py-2 rule-bottom bg-ink-050">
+            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone-4">
+              Done &amp; Paid
+            </span>
+            <span className="font-mono text-[9px] text-bone-4">{donePaidRows.length}</span>
+          </div>
+          <table className="w-full border-collapse opacity-60">
+            <tbody>
+              {donePaidRows.map((player, i) => (
+                <PlayerRow key={player.id} player={player} index={i} tick={tick} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <AddPlayerDialog open={addOpen} onClose={() => setAddOpen(false)} />
     </div>

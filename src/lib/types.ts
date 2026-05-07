@@ -49,10 +49,21 @@ export type QueueCard = {
   slots: (string | null)[];
 };
 
+export type MatchRecord = {
+  id: string;
+  courtNumber: number;
+  sideA: { playerId: string; name: string }[];
+  sideB: { playerId: string; name: string }[];
+  winner: "A" | "B" | "none";
+  durationMs: number;
+  completedAt: number;
+};
+
 export type Session = {
   courts: Court[];
   queue: QueueCard[];
   players: Player[];
+  matches: MatchRecord[];
   matchesCompleted: number;
   totalMatchDurationMs: number;
   startedAt?: number;

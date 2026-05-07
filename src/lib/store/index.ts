@@ -7,6 +7,7 @@ import type {
   CourtSize,
   Gender,
   Level,
+  MatchRecord,
   Player,
   PlayerStatus,
   QueueCard,
@@ -47,6 +48,7 @@ function seed(): Session {
       slots: [null, null, null, null],
     })),
     players: [],
+    matches: [],
     matchesCompleted: 0,
     totalMatchDurationMs: 0,
     startedAt: now(),
@@ -512,6 +514,8 @@ export const useStore = create<QueueingStore>()(
           const B = court.slots.slice(half).filter(Boolean) as string[];
           const ids = [...A, ...B];
 
+          const byId = Object.fromEntries(session.players.map((p) => [p.id, p]));
+
           const players = session.players.map((p) => {
             if (!ids.includes(p.id)) return p;
             const isWin  = (winner === "A" && A.includes(p.id)) || (winner === "B" && B.includes(p.id));
@@ -531,10 +535,32 @@ export const useStore = create<QueueingStore>()(
               ? { ...c, slots: Array(c.size).fill(null), matchStartedAt: undefined }
               : c,
           );
+
+          const completedAt = now();
+          const matchDuration = court.matchStartedAt ? completedAt - court.matchStartedAt : 0;
+
+          const record: MatchRecord = {
+            id: uid(),
+            courtNumber: court.number,
+            sideA: A.map((id) => ({ playerId: id, name: byId[id]?.name ?? id })),
+            sideB: B.map((id) => ({ playerId: id, name: byId[id]?.name ?? id })),
+            winner,
+            durationMs: matchDuration,
+            completedAt,
+          };
+
           const matchesCompleted = (session.matchesCompleted ?? 0) + 1;
-          const matchDuration = court.matchStartedAt ? now() - court.matchStartedAt : 0;
           const totalMatchDurationMs = (session.totalMatchDurationMs ?? 0) + matchDuration;
-          return { session: { ...session, courts, players, matchesCompleted, totalMatchDurationMs } };
+          return {
+            session: {
+              ...session,
+              courts,
+              players,
+              matches: [...(session.matches ?? []), record],
+              matchesCompleted,
+              totalMatchDurationMs,
+            },
+          };
         });
       },
 
@@ -543,17 +569,6 @@ export const useStore = create<QueueingStore>()(
           const player = session.players.find((p) => p.id === playerId);
           if (!player) return { session };
           const newPaid = !player.paid;
-          // Auto-remove when marking paid and player is already done
-          if (newPaid && player.status === "done") {
-            return {
-              session: {
-                ...session,
-                players: session.players.filter((p) => p.id !== playerId),
-                courts: releaseFromCourts(session.courts, playerId),
-                queue: releaseFromQueue(session.queue, playerId),
-              },
-            };
-          }
           return {
             session: {
               ...session,
@@ -569,17 +584,6 @@ export const useStore = create<QueueingStore>()(
         set(({ session }) => {
           const player = session.players.find((p) => p.id === playerId);
           if (!player) return { session };
-          // Auto-remove when marking done and player is already paid
-          if (status === "done" && player.paid) {
-            return {
-              session: {
-                ...session,
-                players: session.players.filter((p) => p.id !== playerId),
-                courts: releaseFromCourts(session.courts, playerId),
-                queue: releaseFromQueue(session.queue, playerId),
-              },
-            };
-          }
           const movedToBoard = status === "playing" || status === "waiting";
           const courts = movedToBoard
             ? session.courts

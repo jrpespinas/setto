@@ -66,7 +66,7 @@ export function CourtCard({
   return (
     <>
       <article
-        className={`reveal relative bg-ink-100 flex flex-col transition-[outline,box-shadow] duration-150 ${
+        className={`reveal relative bg-ink-100 flex flex-col overflow-hidden transition-[outline,box-shadow] duration-150 ${
           queueOver
             ? "outline outline-1 outline-neon shadow-[0_0_16px_-4px_var(--neon-soft)]"
             : "border-[0.5px] border-hairline-2"
@@ -245,7 +245,7 @@ function TeamCol({
   label: string;
 }) {
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col min-w-0">
       <div className="font-mono text-[9px] uppercase tracking-[0.28em] text-white/80 px-3 pt-2.5 pb-1.5">
         Side {label}
       </div>

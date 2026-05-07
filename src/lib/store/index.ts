@@ -16,7 +16,7 @@ import type {
 import { useFeesStore } from "@/lib/store/fees";
 
 const STORAGE_KEY = "queueing:session:v2";
-const QUEUE_SLOTS = 3;
+const QUEUE_SLOTS = 4;
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -653,7 +653,18 @@ export const useStore = create<QueueingStore>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ session: state.session }),
       onRehydrateStorage: () => (state) => {
-        state?.setHydrated(true);
+        if (state) {
+          const q = state.session.queue;
+          if (q.length < QUEUE_SLOTS) {
+            const extra = Array.from({ length: QUEUE_SLOTS - q.length }, () => ({
+              id: uid(),
+              size: 4 as CourtSize,
+              slots: [null, null, null, null] as [string | null, string | null, string | null, string | null],
+            }));
+            state.session = { ...state.session, queue: [...q, ...extra] };
+          }
+          state.setHydrated(true);
+        }
       },
     },
   ),

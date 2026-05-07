@@ -138,7 +138,7 @@ export function MatchHistory() {
       </div>
 
       {/* ── Scrollable content ─────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 pb-48">
       {matches.length === 0 ? (
         <div className="flex items-center justify-center py-16">
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone-4">

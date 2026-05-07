@@ -7,7 +7,7 @@ import { LEVEL_LABEL, type Player, type QueueCard } from "@/lib/types";
 import { Chip, LiveDot } from "@/components/ui/chip";
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog";
 
-/** 3-slot queue rail — "prototype matches" feeding the courts.
+/** 4-slot queue rail — "prototype matches" feeding the courts.
  * Ghost-bordered, ready-pulses when filled to a valid size. */
 export function QueueRail() {
   const session = useStore((s) => s.session);
@@ -19,7 +19,7 @@ export function QueueRail() {
       <header className="px-4 pt-4 pb-3 rule-bottom">
         <h2 className="statement text-[22px] leading-none">Match Queue</h2>
         <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone-4 mt-2">
-          {queue.filter((q) => q.slots.some(Boolean)).length} / 3 matches ready
+          {queue.filter((q) => q.slots.some(Boolean)).length} / 4 matches ready
         </p>
       </header>
       <ul>

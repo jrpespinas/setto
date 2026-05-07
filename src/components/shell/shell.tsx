@@ -43,7 +43,7 @@ export function Shell({ children }: { children?: ReactNode }) {
     <>
       <ServiceWorkerRegister />
       <Toaster
-        position="bottom-right"
+        position="bottom-left"
         toastOptions={{
           style: { background: "#ffffff", color: "#0e1018", border: "0.5px solid #e0e0e0" },
           actionButtonStyle: { background: "#0e1018", color: "#ffffff" },

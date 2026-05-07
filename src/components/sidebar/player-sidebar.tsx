@@ -214,7 +214,7 @@ export function PlayerSidebar() {
       </header>
 
       {/* ── Player list ───────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto pb-48">
 
         {/* Filter banner */}
         {isFiltered && (

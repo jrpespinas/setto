@@ -116,9 +116,9 @@ html[data-theme="light"] {
 
   /* Text — near-black with blue cast, reads sharp on cool white */
   --bone:   #141620;
-  --bone-2: rgba(14, 16, 24, 0.92);
-  --bone-3: rgba(14, 16, 24, 0.80);
-  --bone-4: rgba(14, 16, 24, 0.65);
+  --bone-2: rgba(14, 16, 24, 0.96);
+  --bone-3: rgba(14, 16, 24, 0.88);
+  --bone-4: rgba(14, 16, 24, 0.76);
 
   /* Neon → deep teal — legible on cool white, same family as dark neon */
   --neon: #007a6a;

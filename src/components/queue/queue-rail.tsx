@@ -3,7 +3,7 @@
 import { useMemo, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 import { useStore, selectors } from "@/lib/store";
-import { LEVEL_LABEL, type Player, type QueueCard } from "@/lib/types";
+import { type Player, type QueueCard } from "@/lib/types";
 import { LiveDot } from "@/components/ui/chip";
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog";
 
@@ -15,8 +15,8 @@ export function QueueRail() {
   const readyCount  = queue.filter((q) => q.slots.every(Boolean)).length;
 
   return (
-    <aside className="flex flex-col bg-ink-050 border-[0.5px] border-hairline-2">
-      <header className="px-4 pt-4 pb-3 rule-bottom">
+    <aside className="flex flex-col bg-white border-[0.5px] border-hairline-2">
+      <header className="px-4 pt-4 pb-3 rule-bottom bg-ink-050">
         <div className="flex items-baseline justify-between gap-2">
           <h2 className="statement text-[22px] leading-none">Match Queue</h2>
           <span className="font-mono digit text-[11px] text-bone-3 tabular-nums shrink-0">
